@@ -250,12 +250,16 @@ const CodeReviewApp: React.FC = () => {
     }
   };
 
-  const getSeverityIcon = (severity: string): JSX.Element => {
-    switch (severity?.toLowerCase()) {
-      case 'high': return <XCircle className="w-4 h-4" />;
-      case 'medium': return <AlertTriangle className="w-4 h-4" />;
-      case 'low': return <CheckCircle className="w-4 h-4" />;
-      default: return <FileText className="w-4 h-4" />;
+  const getSeverityIcon = (severity: string): React.ReactElement => {
+    switch (severity) {
+      case 'high':
+        return <XCircle className="text-red-500" />;
+      case 'medium':
+        return <AlertTriangle className="text-yellow-500" />;
+      case 'low':
+        return <CheckCircle className="text-green-500" />;
+      default:
+        return <CheckCircle className="text-green-500" />;
     }
   };
 
@@ -266,12 +270,12 @@ const CodeReviewApp: React.FC = () => {
   };
 
   const CategoryIcon: React.FC<{ category: string }> = ({ category }) => {
-    const icons: Record<string, JSX.Element> = {
+    const icons: Record<string, React.ReactElement> = {
       security: <Shield className="w-5 h-5" />,
       performance: <Zap className="w-5 h-5" />,
       code_quality: <Code className="w-5 h-5" />,
       maintainability: <FileText className="w-5 h-5" />,
-      best_practices: <CheckCircle className="w-5 h-5" />
+      best_practices: <Users className="w-5 h-5" />
     };
     return icons[category] || <FileText className="w-5 h-5" />;
   };
@@ -435,30 +439,20 @@ const CodeReviewApp: React.FC = () => {
                         </div>
                         {data.issues && data.issues.length > 0 && (
                           <div className="space-y-3">
-                            {data.issues.map((issue, index) => (
+                            {data.issues.map((issue: Issue, index: number) => (
                               <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
-                                <div className="flex items-start gap-3">
-                                  {issue.severity && (
-                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${getSeverityColor(issue.severity)}`}>
-                                      {getSeverityIcon(issue.severity)}
-                                      {issue.severity}
-                                    </span>
-                                  )}
-                                  <div className="flex-1">
-                                    {issue.type && (
-                                      <h4 className="font-semibold text-gray-200 mb-1">{issue.type}</h4>
-                                    )}
-                                    {issue.description && (
-                                      <p className="text-gray-300 text-sm mb-2">{issue.description}</p>
-                                    )}
-                                    {issue.line && (
-                                      <p className="text-gray-400 text-xs mb-2">Line {issue.line}</p>
-                                    )}
-                                    {issue.suggestion && (
-                                      <p className="text-blue-400 text-sm italic">{issue.suggestion}</p>
-                                    )}
-                                  </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  {getSeverityIcon(issue.severity)}
+                                  <span className={`text-sm ${getSeverityColor(issue.severity)}`}>
+                                    {issue.type}
+                                  </span>
                                 </div>
+                                <p className="text-sm mb-2">{issue.description}</p>
+                                {issue.suggestion && (
+                                  <p className="text-sm text-gray-400">
+                                    Suggestion: {issue.suggestion}
+                                  </p>
+                                )}
                               </div>
                             ))}
                           </div>

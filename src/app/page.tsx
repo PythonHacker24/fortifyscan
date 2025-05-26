@@ -1,5 +1,5 @@
 import CodeReviewApp from '@/components/CodeReviewApp';
 
-export default function Home(): JSX.Element {
+export default function Home() {
   return <CodeReviewApp />;
 }
