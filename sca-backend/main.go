@@ -28,6 +28,7 @@ var (
 	huggingFaceURL = "https://router.huggingface.co/sambanova/v1/chat/completions"
 	rdb            *redis.Client
 	ctx            = context.Background()
+	apiKey         string
 )
 
 // Initialize Redis client
@@ -113,13 +114,18 @@ type ApiErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// CORS middleware
+// corsMiddleware handles CORS headers
 func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Allow requests from any origin in development
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+		// Allow necessary headers
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-API-Key")
+		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+
+		// Handle preflight requests
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -127,6 +133,32 @@ func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 	}
+}
+
+// authMiddleware verifies the API key in requests
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get API key from header
+		clientAPIKey := r.Header.Get("X-API-Key")
+
+		// Check if API key is provided and matches
+		if clientAPIKey == "" {
+			sendError(w, "API key is required", http.StatusUnauthorized)
+			return
+		}
+
+		if clientAPIKey != apiKey {
+			sendError(w, "Invalid API key", http.StatusUnauthorized)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+// Combine CORS and auth middleware
+func withMiddleware(handler http.HandlerFunc) http.HandlerFunc {
+	return corsMiddleware(authMiddleware(handler))
 }
 
 // Stats handler with Redis
@@ -365,18 +397,23 @@ Code to analyze:
 }
 
 func main() {
-	// Get API token from environment
-	apiToken := os.Getenv("HF_API_KEY")
-	if apiToken == "" {
+	// Get API tokens from environment
+	apiKey = os.Getenv("API_KEY")
+	if apiKey == "" {
+		log.Fatal("API_KEY environment variable not set")
+	}
+
+	hfAPIKey := os.Getenv("HF_API_KEY")
+	if hfAPIKey == "" {
 		log.Fatal("HF_API_KEY environment variable not set")
 	}
 
 	// Initialize Redis
 	initRedis()
 
-	// Set up routes with CORS middleware
-	http.HandleFunc("/api/analyze-code", corsMiddleware(analyzeHandler))
-	http.HandleFunc("/api/stats", corsMiddleware(statsHandler))
+	// Set up routes with middleware
+	http.HandleFunc("/api/analyze-code", withMiddleware(analyzeHandler))
+	http.HandleFunc("/api/stats", withMiddleware(statsHandler))
 
 	port := os.Getenv("PORT")
 	if port == "" {

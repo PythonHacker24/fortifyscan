@@ -6,9 +6,10 @@ services:
       context: ./sca-backend
       dockerfile: Dockerfile
     ports:
-      - "1000:1000"
+      - "0.0.0.0:1000:1000"
     environment:
       - HF_API_KEY=${HF_API_KEY}
+      - API_KEY=${API_KEY}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:

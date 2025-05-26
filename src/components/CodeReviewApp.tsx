@@ -65,6 +65,9 @@ const CodeReviewApp: React.FC = () => {
   // Animation states
   const [showSearchAnimation, setShowSearchAnimation] = useState<boolean>(false);
 
+  // Get the API URL from environment or default to localhost
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
+
   // Initialize counters and animate on first visit
   useEffect(() => {
     const initializeCounters = async (): Promise<void> => {
@@ -72,10 +75,11 @@ const CodeReviewApp: React.FC = () => {
         setStatsError(false);
         
         // Fetch current counts from API
-        const response = await fetch('http://localhost:1000/api/stats', {
+        const response = await fetch(`${API_URL}/api/stats`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
         });
         
@@ -90,10 +94,11 @@ const CodeReviewApp: React.FC = () => {
         const currentAnalysisCount = data.analyses || 0;
         
         // Update server counts
-        const updateResponse = await fetch('http://localhost:1000/api/stats', {
+        const updateResponse = await fetch(`${API_URL}/api/stats`, {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json' 
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
           body: JSON.stringify({ 
             visitors: newVisitorCount, 
@@ -165,10 +170,11 @@ const CodeReviewApp: React.FC = () => {
     setShowSearchAnimation(true);
     
     try {
-      const response = await fetch('http://localhost:1000/api/analyze-code', {
+      const response = await fetch(`${API_URL}/api/analyze-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
         },
         body: JSON.stringify({ code: codeInput }),
       });
@@ -197,9 +203,12 @@ const CodeReviewApp: React.FC = () => {
           setDisplayAnalysisCount(newAnalysisCount);
           
           // Update server count
-          await fetch('http://localhost:1000/api/stats', {
+          await fetch(`${API_URL}/api/stats`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
+            },
             body: JSON.stringify({ 
               visitors: visitorCount, 
               analyses: newAnalysisCount 
