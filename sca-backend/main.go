@@ -119,19 +119,18 @@ func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// Get the origin from the request header
 		origin := r.Header.Get("Origin")
 		if origin == "" {
-			// If no origin, allow localhost and Vercel domains
 			origin = "*"
 		}
 
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-API-Key")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 
 		// Handle preflight requests
-		if r.Method == "OPTIONS" {
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -164,32 +163,54 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 // withMiddleware combines CORS and auth middleware
 func withMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Apply CORS first
-		corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
-			// Then apply auth
-			if r.Method != "OPTIONS" { // Skip auth for OPTIONS requests
-				// Get API key from header
-				clientAPIKey := r.Header.Get("X-API-Key")
+		// Always apply CORS headers first
+		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 
-				// Check if API key is provided and matches
-				if clientAPIKey == "" {
-					sendError(w, "API key is required", http.StatusUnauthorized)
-					return
-				}
+		// Handle OPTIONS request immediately
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 
-				if clientAPIKey != apiKey {
-					sendError(w, "Invalid API key", http.StatusUnauthorized)
-					return
-				}
+		// For non-OPTIONS requests, check authentication
+		if r.Method != http.MethodOptions {
+			clientAPIKey := r.Header.Get("X-API-Key")
+			if clientAPIKey == "" {
+				sendError(w, "API key is required", http.StatusUnauthorized)
+				return
 			}
+			if clientAPIKey != apiKey {
+				sendError(w, "Invalid API key", http.StatusUnauthorized)
+				return
+			}
+		}
 
-			handler(w, r)
-		})(w, r)
+		handler(w, r)
 	}
 }
 
 // Stats handler with Redis
 func statsHandler(w http.ResponseWriter, r *http.Request) {
+	// Set CORS headers for this specific endpoint
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	// Handle OPTIONS request
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method == "GET" {
@@ -248,8 +269,24 @@ func sendError(w http.ResponseWriter, message string, statusCode int) {
 
 // Code analysis handler
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
-	// Only allow POST method
-	if r.Method != "POST" {
+	// Set CORS headers for this specific endpoint
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		origin = "*"
+	}
+	w.Header().Set("Access-Control-Allow-Origin", origin)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	// Handle OPTIONS request
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Only allow POST method for actual requests
+	if r.Method != http.MethodPost {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -440,14 +477,33 @@ func main() {
 	// Create a new mux router
 	mux := http.NewServeMux()
 
-	// Set up routes with middleware
-	mux.HandleFunc("/api/analyze-code", withMiddleware(analyzeHandler))
-	mux.HandleFunc("/api/stats", withMiddleware(statsHandler))
+	// Set up routes
+	mux.HandleFunc("/api/analyze-code", analyzeHandler)
+	mux.HandleFunc("/api/stats", statsHandler)
 
 	// Create server with timeouts
 	server := &http.Server{
-		Addr:         ":" + getPort(),
-		Handler:      mux,
+		Addr: ":" + getPort(),
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set CORS headers for all requests
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				origin = "*"
+			}
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "*")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.Header().Set("Access-Control-Max-Age", "86400")
+
+			// Handle OPTIONS requests at the server level
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			mux.ServeHTTP(w, r)
+		}),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
