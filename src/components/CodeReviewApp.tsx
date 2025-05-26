@@ -72,7 +72,7 @@ const CodeReviewApp: React.FC = () => {
         setStatsError(false);
         
         // Fetch current counts from API
-        const response = await fetch('/api/stats', {
+        const response = await fetch('http://localhost:1000/api/stats', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ const CodeReviewApp: React.FC = () => {
         const currentAnalysisCount = data.analyses || 0;
         
         // Update server counts
-        const updateResponse = await fetch('/api/stats', {
+        const updateResponse = await fetch('http://localhost:1000/api/stats', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json' 
@@ -165,7 +165,7 @@ const CodeReviewApp: React.FC = () => {
     setShowSearchAnimation(true);
     
     try {
-      const response = await fetch('/api/analyze-code', {
+      const response = await fetch('http://localhost:1000/api/analyze-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ const CodeReviewApp: React.FC = () => {
           setDisplayAnalysisCount(newAnalysisCount);
           
           // Update server count
-          await fetch('/api/stats', {
+          await fetch('http://localhost:1000/api/stats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
