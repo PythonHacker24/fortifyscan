@@ -24,11 +24,11 @@ type Stats struct {
 }
 
 var (
-	stats          = &Stats{}
-	huggingFaceURL = "https://router.huggingface.co/sambanova/v1/chat/completions"
-	rdb            *redis.Client
-	ctx            = context.Background()
-	apiKey         string
+	stats         = &Stats{}
+	openRouterURL = "https://openrouter.ai/api/v1/chat/completions"
+	rdb           *redis.Client
+	ctx           = context.Background()
+	apiKey        string
 )
 
 // Initialize Redis client
@@ -89,19 +89,18 @@ type AnalysisResponse struct {
 	Suggestions     []string `json:"suggestions"`
 }
 
-// Hugging Face API structures
-type HFMessage struct {
+// OpenRouter API structures
+type OpenRouterMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type HFRequest struct {
-	Messages []HFMessage `json:"messages"`
-	Model    string      `json:"model"`
-	Stream   bool        `json:"stream"`
+type OpenRouterRequest struct {
+	Model    string              `json:"model"`
+	Messages []OpenRouterMessage `json:"messages"`
 }
 
-type HFResponse struct {
+type OpenRouterResponse struct {
 	Choices []struct {
 		Message struct {
 			Content string `json:"content"`
@@ -295,73 +294,72 @@ Code to analyze:
 
 ` + req.Code
 
-	hfReqBody := HFRequest{
-		Messages: []HFMessage{
+	openRouterReq := OpenRouterRequest{
+		Model: "qwen/qwen2.5-vl-72b-instruct:free",
+		Messages: []OpenRouterMessage{
 			{
 				Role:    "user",
 				Content: prompt,
 			},
 		},
-		Model:  "DeepSeek-R1",
-		Stream: false,
 	}
 
-	jsonBody, err := json.Marshal(hfReqBody)
+	jsonBody, err := json.Marshal(openRouterReq)
 	if err != nil {
 		sendError(w, "Failed to serialize request", http.StatusInternalServerError)
 		return
 	}
 
-	// Send request to Hugging Face
-	hfReq, err := http.NewRequest("POST", huggingFaceURL, bytes.NewBuffer(jsonBody))
+	// Send request to OpenRouter
+	httpReq, err := http.NewRequest("POST", openRouterURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		sendError(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
-	// Set required headers for Hugging Face API
-	hfReq.Header.Set("Content-Type", "application/json")
-	hfReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("HF_API_KEY")))
+	// Set required headers for OpenRouter API
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OPENROUTER_API_KEY")))
 
 	client := &http.Client{Timeout: 30 * time.Second}
-	hfResp, err := client.Do(hfReq)
+	httpResp, err := client.Do(httpReq)
 	if err != nil {
-		sendError(w, "Failed to contact inference API: "+err.Error(), http.StatusInternalServerError)
+		sendError(w, "Failed to contact OpenRouter API: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer hfResp.Body.Close()
+	defer httpResp.Body.Close()
 
-	if hfResp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(hfResp.Body)
-		sendError(w, fmt.Sprintf("Model API error (status %d): %s", hfResp.StatusCode, string(respBody)), http.StatusInternalServerError)
+	if httpResp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(httpResp.Body)
+		sendError(w, fmt.Sprintf("OpenRouter API error (status %d): %s", httpResp.StatusCode, string(respBody)), http.StatusInternalServerError)
 		return
 	}
 
-	respBody, err := io.ReadAll(hfResp.Body)
+	respBody, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		sendError(w, "Failed to read model response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Debug: Log the raw response
-	log.Printf("Raw response from DeepSeek: %s", string(respBody))
+	log.Printf("Raw response from OpenRouter: %s", string(respBody))
 
-	var hfResponse HFResponse
-	if err := json.Unmarshal(respBody, &hfResponse); err != nil {
+	var openRouterResponse OpenRouterResponse
+	if err := json.Unmarshal(respBody, &openRouterResponse); err != nil {
 		sendError(w, fmt.Sprintf("Failed to parse model response: %v. Raw response: %s", err, string(respBody)), http.StatusInternalServerError)
 		return
 	}
 
-	if len(hfResponse.Choices) == 0 {
+	if len(openRouterResponse.Choices) == 0 {
 		sendError(w, "No response from model", http.StatusInternalServerError)
 		return
 	}
 
 	// Debug: Log the content we're trying to parse
-	log.Printf("Attempting to parse content: %s", hfResponse.Choices[0].Message.Content)
+	log.Printf("Attempting to parse content: %s", openRouterResponse.Choices[0].Message.Content)
 
 	// Try to clean the response before parsing
-	content := hfResponse.Choices[0].Message.Content
+	content := openRouterResponse.Choices[0].Message.Content
 	// Find the first { and last } to extract just the JSON part
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
@@ -403,9 +401,9 @@ func main() {
 		log.Fatal("API_KEY environment variable not set")
 	}
 
-	hfAPIKey := os.Getenv("HF_API_KEY")
-	if hfAPIKey == "" {
-		log.Fatal("HF_API_KEY environment variable not set")
+	openRouterKey := os.Getenv("OPENROUTER_API_KEY")
+	if openRouterKey == "" {
+		log.Fatal("OPENROUTER_API_KEY environment variable not set")
 	}
 
 	// Initialize Redis
