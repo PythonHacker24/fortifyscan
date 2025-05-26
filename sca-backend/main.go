@@ -116,13 +116,19 @@ type ApiErrorResponse struct {
 // corsMiddleware handles CORS headers
 func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Allow requests from any origin in development
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Get the origin from the request header
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			// If no origin, allow localhost and Vercel domains
+			origin = "*"
+		}
 
-		// Allow necessary headers
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-API-Key")
-		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Max-Age", "3600")
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {
@@ -155,9 +161,31 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Combine CORS and auth middleware
+// withMiddleware combines CORS and auth middleware
 func withMiddleware(handler http.HandlerFunc) http.HandlerFunc {
-	return corsMiddleware(authMiddleware(handler))
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Apply CORS first
+		corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
+			// Then apply auth
+			if r.Method != "OPTIONS" { // Skip auth for OPTIONS requests
+				// Get API key from header
+				clientAPIKey := r.Header.Get("X-API-Key")
+
+				// Check if API key is provided and matches
+				if clientAPIKey == "" {
+					sendError(w, "API key is required", http.StatusUnauthorized)
+					return
+				}
+
+				if clientAPIKey != apiKey {
+					sendError(w, "Invalid API key", http.StatusUnauthorized)
+					return
+				}
+			}
+
+			handler(w, r)
+		})(w, r)
+	}
 }
 
 // Stats handler with Redis
@@ -409,17 +437,32 @@ func main() {
 	// Initialize Redis
 	initRedis()
 
-	// Set up routes with middleware
-	http.HandleFunc("/api/analyze-code", withMiddleware(analyzeHandler))
-	http.HandleFunc("/api/stats", withMiddleware(statsHandler))
+	// Create a new mux router
+	mux := http.NewServeMux()
 
+	// Set up routes with middleware
+	mux.HandleFunc("/api/analyze-code", withMiddleware(analyzeHandler))
+	mux.HandleFunc("/api/stats", withMiddleware(statsHandler))
+
+	// Create server with timeouts
+	server := &http.Server{
+		Addr:         ":" + getPort(),
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	log.Printf("Server starting on port %s", getPort())
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func getPort() string {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "1000"
 	}
-
-	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal(err)
-	}
+	return port
 }
