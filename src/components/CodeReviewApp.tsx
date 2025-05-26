@@ -81,7 +81,6 @@ const CodeReviewApp: React.FC = () => {
             'Content-Type': 'application/json',
             'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
-          mode: 'cors',
         });
         
         if (!response.ok) {
@@ -101,7 +100,6 @@ const CodeReviewApp: React.FC = () => {
             'Content-Type': 'application/json',
             'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
-          mode: 'cors',
           body: JSON.stringify({ 
             visitors: newVisitorCount, 
             analyses: currentAnalysisCount 
@@ -178,7 +176,6 @@ const CodeReviewApp: React.FC = () => {
           'Content-Type': 'application/json',
           'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
         },
-        mode: 'cors',
         body: JSON.stringify({ code: codeInput }),
       });
       
@@ -212,7 +209,6 @@ const CodeReviewApp: React.FC = () => {
               'Content-Type': 'application/json',
               'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
             },
-            mode: 'cors',
             body: JSON.stringify({ 
               visitors: visitorCount, 
               analyses: newAnalysisCount 
