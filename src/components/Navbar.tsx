@@ -5,7 +5,8 @@ export default function Navbar() {
   return (
     <nav className="w-full h-16 border-b border-gray-800 bg-gray-950">
       <div className="container mx-auto h-full px-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-100">Fortify Scan</h1>
+        <h1 className="text-2xl font-bold text-gray-100">🌧️ Rain Check</h1>
+        <p> secure vibe coding </p>
         
         <div className="flex items-center gap-4">
           <Link

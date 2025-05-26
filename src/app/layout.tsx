@@ -9,7 +9,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Fortify Scan',
+  title: 'Rain Check',
   description: 'Get instant security, performance, and quality insights for your code',
 };
 
