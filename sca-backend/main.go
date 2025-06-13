@@ -393,7 +393,7 @@ func main() {
 			// List of allowed origins
 			allowedOrigins := []string{
 				"http://localhost:3000",
-				"https://fortifyscan.vercel.app/",
+				"https://fortifyscan.vercel.app",
 				"https://*.vercel.app", // Allow all Vercel preview deployments
 			}
 
