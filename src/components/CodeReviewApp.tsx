@@ -78,12 +78,9 @@ const CodeReviewApp: React.FC = () => {
         const response = await fetch(`${API_URL}/api/stats`, {
           method: 'GET',
           headers: {
-            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
-          mode: 'cors',
-          credentials: 'omit'
         });
         
         if (!response.ok) {
@@ -100,12 +97,9 @@ const CodeReviewApp: React.FC = () => {
         const updateResponse = await fetch(`${API_URL}/api/stats`, {
           method: 'POST',
           headers: { 
-            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
           },
-          mode: 'cors',
-          credentials: 'omit',
           body: JSON.stringify({ 
             visitors: newVisitorCount, 
             analyses: currentAnalysisCount 
@@ -179,12 +173,9 @@ const CodeReviewApp: React.FC = () => {
       const response = await fetch(`${API_URL}/api/analyze-code`, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json',
           'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
         },
-        mode: 'cors',
-        credentials: 'omit',
         body: JSON.stringify({ code: codeInput }),
       });
       
@@ -215,12 +206,9 @@ const CodeReviewApp: React.FC = () => {
           const updateResponse = await fetch(`${API_URL}/api/stats`, {
             method: 'POST',
             headers: { 
-              'Accept': 'application/json',
               'Content-Type': 'application/json',
               'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
             },
-            mode: 'cors',
-            credentials: 'omit',
             body: JSON.stringify({ 
               visitors: visitorCount, 
               analyses: newAnalysisCount 

@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	// "sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -21,15 +19,13 @@ import (
 type Stats struct {
 	Visitors int `json:"visitors"`
 	Analyses int `json:"analyses"`
-	// mu       sync.RWMutex
 }
 
 var (
-	// stats         = &Stats{}
-	openRouterURL = "https://openrouter.ai/api/v1/chat/completions"
-	rdb           *redis.Client
-	ctx           = context.Background()
-	apiKey        string
+	digitalOceanURL = "https://ipwpfibhdjn5nc34bk25sueu.agents.do-ai.run/api/v1/chat/completions"
+	rdb             *redis.Client
+	ctx             = context.Background()
+	apiKey          string
 )
 
 // Initialize Redis client
@@ -46,19 +42,22 @@ func initRedis() {
 
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
-		Password: os.Getenv("REDIS_PASSWORD"), // no password by default
-		DB:       0,                           // use default DB
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
 	})
 
 	// Test the connection
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		log.Printf("Warning: Failed to connect to Redis: %v", err)
+		log.Println("Continuing without Redis - stats will not persist")
+		rdb = nil
+	} else {
+		// Initialize counters if they don't exist
+		rdb.SetNX(ctx, "visitors", 0, 0)
+		rdb.SetNX(ctx, "analyses", 0, 0)
+		log.Println("Redis connection established")
 	}
-
-	// Initialize counters if they don't exist
-	rdb.SetNX(ctx, "visitors", 0, 0)
-	rdb.SetNX(ctx, "analyses", 0, 0)
 }
 
 // Request body from client
@@ -90,23 +89,28 @@ type AnalysisResponse struct {
 	Suggestions     []string `json:"suggestions"`
 }
 
-// OpenRouter API structures
-type OpenRouterMessage struct {
+// DigitalOcean AI API structures
+type DigitalOceanMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type OpenRouterRequest struct {
-	Model    string              `json:"model"`
-	Messages []OpenRouterMessage `json:"messages"`
+type DigitalOceanRequest struct {
+	Messages    []DigitalOceanMessage `json:"messages"`
+	MaxTokens   int                   `json:"max_completion_tokens,omitempty"`
+	Temperature float64               `json:"temperature,omitempty"`
 }
 
-type OpenRouterResponse struct {
+type DigitalOceanResponse struct {
 	Choices []struct {
 		Message struct {
 			Content string `json:"content"`
 		} `json:"message"`
 	} `json:"choices"`
+	Error *struct {
+		Message string `json:"message"`
+		Type    string `json:"type"`
+	} `json:"error,omitempty"`
 }
 
 // ApiErrorResponse represents the error response structure
@@ -135,21 +139,36 @@ func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Stats handler with Redis
+// Health check handler
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "healthy",
+		"time":   time.Now().UTC().Format(time.RFC3339),
+	})
+}
+
+// Stats handler with Redis (with fallback)
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method == "GET" {
-		visitors, err := rdb.Get(ctx, "visitors").Int()
-		if err != nil {
-			sendError(w, "Failed to get visitor count", http.StatusInternalServerError)
-			return
-		}
+		var visitors, analyses int
 
-		analyses, err := rdb.Get(ctx, "analyses").Int()
-		if err != nil {
-			sendError(w, "Failed to get analysis count", http.StatusInternalServerError)
-			return
+		if rdb != nil {
+			var err error
+			visitors, err = rdb.Get(ctx, "visitors").Int()
+			if err != nil {
+				log.Printf("Failed to get visitor count from Redis: %v", err)
+				visitors = 0
+			}
+
+			analyses, err = rdb.Get(ctx, "analyses").Int()
+			if err != nil {
+				log.Printf("Failed to get analysis count from Redis: %v", err)
+				analyses = 0
+			}
 		}
 
 		json.NewEncoder(w).Encode(Stats{
@@ -166,15 +185,15 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Update Redis counters
-		if err := rdb.Set(ctx, "visitors", newStats.Visitors, 0).Err(); err != nil {
-			sendError(w, "Failed to update visitor count", http.StatusInternalServerError)
-			return
-		}
+		// Update Redis counters if available
+		if rdb != nil {
+			if err := rdb.Set(ctx, "visitors", newStats.Visitors, 0).Err(); err != nil {
+				log.Printf("Failed to update visitor count in Redis: %v", err)
+			}
 
-		if err := rdb.Set(ctx, "analyses", newStats.Analyses, 0).Err(); err != nil {
-			sendError(w, "Failed to update analysis count", http.StatusInternalServerError)
-			return
+			if err := rdb.Set(ctx, "analyses", newStats.Analyses, 0).Err(); err != nil {
+				log.Printf("Failed to update analysis count in Redis: %v", err)
+			}
 		}
 
 		json.NewEncoder(w).Encode(&newStats)
@@ -193,9 +212,8 @@ func sendError(w http.ResponseWriter, message string, statusCode int) {
 	})
 }
 
-// Code analysis handler
+// Code analysis handler with DigitalOcean AI
 func analyzeHandler(w http.ResponseWriter, r *http.Request) {
-
 	// Only allow POST method for actual requests
 	if r.Method != http.MethodPost {
 		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -223,147 +241,125 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if code is empty
-	if req.Code == "" {
+	if strings.TrimSpace(req.Code) == "" {
 		sendError(w, "Code cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	// Compose prompt for the LLM
-	prompt := `You are a code review expert. Analyze the following code and respond ONLY in the following JSON format. Make sure to provide detailed, specific feedback for each category:
-
-{
-  "overall_score": float (1-10),
-  "security": {
-    "score": float (1-10),
-    "issues": [
-      {
-        "severity": "high|medium|low",
-        "type": "specific issue category",
-        "description": "detailed description",
-        "line": line number (if applicable),
-        "suggestion": "specific fix suggestion"
-      }
-    ]
-  },
-  "performance": {
-    "score": float (1-10),
-    "issues": [...]
-  },
-  "code_quality": {
-    "score": float (1-10),
-    "issues": [...]
-  },
-  "maintainability": {
-    "score": float (1-10),
-    "issues": [...]
-  },
-  "best_practices": {
-    "score": float (1-10),
-    "issues": [...]
-  },
-  "suggestions": [
-    "specific improvement suggestions..."
-  ]
-}
-
-Code to analyze:
-
-` + req.Code
-
-	openRouterReq := OpenRouterRequest{
-		Model: "deepseek/deepseek-r1:free",
-		Messages: []OpenRouterMessage{
+	// Prepare request for DigitalOcean AI
+	doReq := DigitalOceanRequest{
+		Messages: []DigitalOceanMessage{
 			{
 				Role:    "user",
-				Content: prompt,
+				Content: req.Code,
 			},
 		},
+		MaxTokens:   2000,
+		Temperature: 0.1, // Low temperature for consistent JSON output
 	}
 
-	jsonBody, err := json.Marshal(openRouterReq)
+	jsonBody, err := json.Marshal(doReq)
 	if err != nil {
 		sendError(w, "Failed to serialize request", http.StatusInternalServerError)
 		return
 	}
 
-	// Send request to OpenRouter
-	httpReq, err := http.NewRequest("POST", openRouterURL, bytes.NewBuffer(jsonBody))
+	// Send request to DigitalOcean AI
+	httpReq, err := http.NewRequest("POST", digitalOceanURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		sendError(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
-	// Set required headers for OpenRouter API
+	// Set required headers for DigitalOcean AI API
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("OPENROUTER_API_KEY")))
+	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("DIGITALOCEAN_API_KEY")))
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 60 * time.Second} // Increased timeout for AI processing
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
-		sendError(w, "Failed to contact OpenRouter API: "+err.Error(), http.StatusInternalServerError)
+		sendError(w, "Failed to contact DigitalOcean AI API: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer httpResp.Body.Close()
 
-	if httpResp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(httpResp.Body)
-		sendError(w, fmt.Sprintf("OpenRouter API error (status %d): %s", httpResp.StatusCode, string(respBody)), http.StatusInternalServerError)
+	respBody, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		sendError(w, "Failed to read AI response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respBody, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		sendError(w, "Failed to read model response: "+err.Error(), http.StatusInternalServerError)
+	if httpResp.StatusCode != http.StatusOK {
+		log.Printf("DigitalOcean AI API error (status %d): %s", httpResp.StatusCode, string(respBody))
+		sendError(w, fmt.Sprintf("AI service temporarily unavailable (status %d)", httpResp.StatusCode), http.StatusServiceUnavailable)
 		return
 	}
 
 	// Debug: Log the raw response
-	log.Printf("Raw response from OpenRouter: %s", string(respBody))
+	log.Printf("Raw response from DigitalOcean AI: %s", string(respBody))
 
-	var openRouterResponse OpenRouterResponse
-	if err := json.Unmarshal(respBody, &openRouterResponse); err != nil {
-		sendError(w, fmt.Sprintf("Failed to parse model response: %v. Raw response: %s", err, string(respBody)), http.StatusInternalServerError)
+	var doResponse DigitalOceanResponse
+	if err := json.Unmarshal(respBody, &doResponse); err != nil {
+		sendError(w, fmt.Sprintf("Failed to parse AI response: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	if len(openRouterResponse.Choices) == 0 {
-		sendError(w, "No response from model", http.StatusInternalServerError)
+	// Check for API errors
+	if doResponse.Error != nil {
+		sendError(w, fmt.Sprintf("AI API error: %s", doResponse.Error.Message), http.StatusInternalServerError)
+		return
+	}
+
+	if len(doResponse.Choices) == 0 {
+		sendError(w, "No response from AI model", http.StatusInternalServerError)
 		return
 	}
 
 	// Debug: Log the content we're trying to parse
-	log.Printf("Attempting to parse content: %s", openRouterResponse.Choices[0].Message.Content)
+	content := doResponse.Choices[0].Message.Content
+	log.Printf("Attempting to parse content: %s", content)
 
-	// Try to clean the response before parsing
-	content := openRouterResponse.Choices[0].Message.Content
-	// Find the first { and last } to extract just the JSON part
+	// Clean the response to extract JSON
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
 	if start >= 0 && end >= 0 && end > start {
 		content = content[start : end+1]
 	}
 
-	// Parse model's JSON response
+	// Parse AI's JSON response
 	var analysis AnalysisResponse
 	if err := json.Unmarshal([]byte(content), &analysis); err != nil {
 		log.Printf("Failed to parse JSON content: %v", err)
-		sendError(w, fmt.Sprintf("Failed to parse model's JSON output: %v. Content attempted to parse: %s", err, content), http.StatusInternalServerError)
-		return
+		// Fallback: create a basic response if JSON parsing fails
+		analysis = AnalysisResponse{
+			OverallScore: 5.0,
+			Security: Category{
+				Score: 5.0,
+				Issues: []Issue{{
+					Severity:    "medium",
+					Type:        "Analysis Error",
+					Description: "Unable to complete full analysis due to parsing error",
+					Suggestion:  "Please try again or check code format",
+				}},
+			},
+			Performance:     Category{Score: 5.0, Issues: []Issue{}},
+			CodeQuality:     Category{Score: 5.0, Issues: []Issue{}},
+			Maintainability: Category{Score: 5.0, Issues: []Issue{}},
+			BestPractices:   Category{Score: 5.0, Issues: []Issue{}},
+			Suggestions:     []string{"Code analysis could not be completed fully"},
+		}
 	}
 
-	// Validate the analysis response
-	if analysis.OverallScore == 0 || (len(analysis.Security.Issues) == 0 &&
-		len(analysis.Performance.Issues) == 0 &&
-		len(analysis.CodeQuality.Issues) == 0 &&
-		len(analysis.Maintainability.Issues) == 0 &&
-		len(analysis.BestPractices.Issues) == 0) {
-		sendError(w, "Model returned incomplete or invalid analysis", http.StatusInternalServerError)
-		return
+	// Validate scores are within range
+	if analysis.OverallScore < 1 || analysis.OverallScore > 10 {
+		analysis.OverallScore = 5.0
 	}
 
-	// Update analysis count in Redis
-	if err := rdb.Incr(ctx, "analyses").Err(); err != nil {
-		log.Printf("Failed to increment analysis count: %v", err)
+	// Update analysis count in Redis if available
+	if rdb != nil {
+		if err := rdb.Incr(ctx, "analyses").Err(); err != nil {
+			log.Printf("Failed to increment analysis count: %v", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -377,33 +373,53 @@ func main() {
 		log.Fatal("API_KEY environment variable not set")
 	}
 
-	openRouterKey := os.Getenv("OPENROUTER_API_KEY")
-	if openRouterKey == "" {
-		log.Fatal("OPENROUTER_API_KEY environment variable not set")
+	digitalOceanKey := os.Getenv("DIGITALOCEAN_API_KEY")
+	if digitalOceanKey == "" {
+		log.Fatal("DIGITALOCEAN_API_KEY environment variable not set")
 	}
 
-	// Initialize Redis
+	// Initialize Redis (with fallback if unavailable)
 	initRedis()
 
 	// Create a new mux router
 	mux := http.NewServeMux()
 
-	// Set up routes
+	// CORS middleware
+	corsMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Set CORS headers
+			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+			w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
+
+			// Handle preflight requests
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	// Set up routes with CORS middleware
+	mux.HandleFunc("/health", healthHandler) // Health check endpoint (no auth required)
 	mux.HandleFunc("/api/analyze-code", authMiddleware(analyzeHandler))
 	mux.HandleFunc("/api/stats", authMiddleware(statsHandler))
 
-	// Create server with timeouts
+	// Create server with proper timeouts
 	server := &http.Server{
-		Addr: ":" + getPort(),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			mux.ServeHTTP(w, r)
-		}),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:         ":" + getPort(),
+		Handler:      corsMiddleware(mux),
+		ReadTimeout:  30 * time.Second,  // Increased for larger code files
+		WriteTimeout: 90 * time.Second,  // Increased for AI processing time
+		IdleTimeout:  120 * time.Second, // Increased for better connection handling
 	}
 
 	log.Printf("Server starting on port %s", getPort())
+	log.Printf("Health check available at: http://localhost:%s/health", getPort())
+
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

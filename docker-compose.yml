@@ -1,29 +1,41 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: ./sca-backend
-      dockerfile: Dockerfile
+  sca-backend:
+    build: ./sca-backend
     ports:
-      - "0.0.0.0:1000:1000"
+      - "1000:1000"
     environment:
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - API_KEY=${API_KEY}
+      - DIGITALOCEAN_API_KEY=${DIGITALOCEAN_API_KEY}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PORT=1000
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:1000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     ports:
       - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
 
 volumes:
-  redis_data: 
+  redis_data:
