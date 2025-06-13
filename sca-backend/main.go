@@ -387,11 +387,31 @@ func main() {
 	// CORS middleware
 	corsMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Set CORS headers
-			w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
-			w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
+			// Get the origin from the request
+			origin := r.Header.Get("Origin")
+
+			// List of allowed origins
+			allowedOrigins := []string{
+				"http://localhost:3000",
+				"https://fortifyscan.vercel.app/",
+				"https://*.vercel.app", // Allow all Vercel preview deployments
+			}
+
+			// Check if the origin is allowed
+			allowed := false
+			for _, allowedOrigin := range allowedOrigins {
+				if origin == allowedOrigin || (strings.HasSuffix(allowedOrigin, "*") && strings.HasSuffix(origin, strings.TrimPrefix(allowedOrigin, "*"))) {
+					allowed = true
+					break
+				}
+			}
+
+			if allowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-API-Key")
+				w.Header().Set("Access-Control-Max-Age", "86400") // 24 hours
+			}
 
 			// Handle preflight requests
 			if r.Method == "OPTIONS" {
