@@ -394,6 +394,7 @@ func main() {
 			allowedOrigins := []string{
 				"http://localhost:3000",
 				"https://fortifyscan.vercel.app",
+				"https://fluxinc.in",
 				"https://*.vercel.app", // Allow all Vercel preview deployments
 			}
 
