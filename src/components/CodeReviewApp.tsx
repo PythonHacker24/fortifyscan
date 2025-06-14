@@ -14,6 +14,7 @@ import {
   BarChart3,
   Search
 } from 'lucide-react';
+import Review from './Review';
 
 // Type definitions
 interface Issue {
@@ -313,6 +314,27 @@ const CodeReviewApp: React.FC = () => {
     </div>
   );
 
+  // Handle feedback submission
+  const handleFeedbackSubmit = async (feedback: { liked: boolean; comment: string }): Promise<void> => {
+    try {
+      const response = await fetch(`${API_URL}/api/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
+        },
+        body: JSON.stringify(feedback),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to submit feedback: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
       <style jsx>{`
@@ -493,6 +515,9 @@ const CodeReviewApp: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Add Review component */}
+        {reviewData && <Review onReviewSubmit={handleFeedbackSubmit} />}
       </div>
     </div>
   );

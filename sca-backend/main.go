@@ -118,6 +118,12 @@ type ApiErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// FeedbackRequest represents the feedback data from client
+type FeedbackRequest struct {
+	Liked   bool   `json:"liked"`
+	Comment string `json:"comment"`
+}
+
 // authMiddleware verifies the API key in requests
 func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -366,6 +372,39 @@ func analyzeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(analysis)
 }
 
+// Feedback handler
+func feedbackHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		sendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var feedback FeedbackRequest
+	if err := json.NewDecoder(r.Body).Decode(&feedback); err != nil {
+		sendError(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+
+	// Store feedback in Redis if available
+	if rdb != nil {
+		feedbackKey := fmt.Sprintf("feedback:%d", time.Now().UnixNano())
+		feedbackData, err := json.Marshal(feedback)
+		if err != nil {
+			log.Printf("Failed to marshal feedback: %v", err)
+		} else {
+			if err := rdb.Set(ctx, feedbackKey, feedbackData, 0).Err(); err != nil {
+				log.Printf("Failed to store feedback: %v", err)
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Feedback received",
+	})
+}
+
 func main() {
 	// Get API tokens from environment
 	apiKey = os.Getenv("API_KEY")
@@ -428,6 +467,7 @@ func main() {
 	mux.HandleFunc("/health", healthHandler) // Health check endpoint (no auth required)
 	mux.HandleFunc("/api/analyze-code", authMiddleware(analyzeHandler))
 	mux.HandleFunc("/api/stats", authMiddleware(statsHandler))
+	mux.HandleFunc("/api/feedback", authMiddleware(feedbackHandler))
 
 	// Create server with proper timeouts
 	server := &http.Server{
