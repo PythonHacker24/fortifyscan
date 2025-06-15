@@ -22,6 +22,7 @@ import {
   StarIcon,
   HeartHandshakeIcon
 } from 'lucide-react';
+import Timeline from './Timeline';
 
 export default function HomePage() {
   // Counter states for stats
@@ -222,6 +223,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Timeline Section */}
+      <Timeline />
 
       {/* Workflow Section */}
       <section id="workflow" className="container mx-auto px-6 py-20">
