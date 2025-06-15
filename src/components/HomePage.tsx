@@ -327,13 +327,10 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-800 bg-gray-950/80">
-        <div className="container mx-auto px-6 py-12">
+        <div className="container mx-auto px-6 py-12" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Code className="w-5 h-5 text-white" />
-                </div>
                 <span className="text-xl font-bold text-blue-400">Raincheck</span>
               </div>
               <p className="text-gray-400 text-sm">
