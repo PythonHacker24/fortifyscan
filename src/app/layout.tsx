@@ -1,30 +1,27 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import Navbar from '@/components/Navbar';
+import Header from '@/components/Header';
+import Announcement from '@/components/Announcement';
 
-const jetbrainsMono = JetBrains_Mono({ 
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Rain Check',
-  description: 'Get instant security, performance, and quality insights for your code',
+  title: 'Raincheck - Code Reviews Made Effortles',
+  description: 'Seamlessly integrate AI-powered code reviews into your development workflow.',
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className={jetbrainsMono.variable}>
-      <body className={`${jetbrainsMono.className} min-h-screen bg-gray-50`}>
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
-          {children}
-        </main>
+    <html lang="en">
+      <body className={inter.className}>
+        <Header />
+        <Announcement />
+        {children}
       </body>
     </html>
   );
