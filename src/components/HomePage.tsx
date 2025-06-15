@@ -23,6 +23,7 @@ import {
   HeartHandshakeIcon
 } from 'lucide-react';
 import Timeline from './Timeline';
+import Stars from './Stars';
 
 export default function HomePage() {
   // Counter states for stats
@@ -128,6 +129,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+      <Stars />
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
@@ -178,8 +180,12 @@ export default function HomePage() {
         </div>
 
         {/* Demo Terminal */}
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+        <div className="max-w-4xl mx-auto relative">
+          {/* Glow Effect */}
+          <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full transform -translate-y-1/2 top-1/2 animate-pulse" />
+          
+          {/* Floating Terminal */}
+          <div className="relative bg-gray-900 rounded-lg border border-gray-800 overflow-hidden transform hover:scale-[1.02] transition-all duration-300 animate-float">
             <div className="bg-gray-800 px-4 py-2 flex items-center gap-2">
               <div className="flex gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
