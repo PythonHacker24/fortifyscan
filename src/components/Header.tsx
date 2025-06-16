@@ -10,7 +10,7 @@ export default function Header() {
             {/* <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <Code className="w-5 h-5 text-white" />
             </div> */}
-            <span className="text-3xl font-bold text-blue-400">Raincheck</span>
+            <Link href='/'><span className="text-3xl font-bold text-blue-400">Raincheck</span></Link>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/#features" className="text-gray-400 hover:text-blue-400 transition-colors">Features</Link>

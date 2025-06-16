@@ -17,5 +17,10 @@ const auth = getAuth(app);
 // Initialize providers
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
+githubProvider.addScope('read:user');
+githubProvider.addScope('user:email');
+githubProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 export { app, auth, googleProvider, githubProvider }; 
