@@ -15,6 +15,8 @@ import {
   Search
 } from 'lucide-react';
 import Review from './Review';
+import Stars from '@/components/Stars';
+import Footer from './Footer';
 
 // Type definitions
 interface Issue {
@@ -337,6 +339,7 @@ const CodeReviewApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+      <Stars />
       <style jsx>{`
         .animation-delay-200 {
           animation-delay: 0.2s;

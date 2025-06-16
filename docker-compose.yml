@@ -12,6 +12,8 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - PORT=1000
+    volumes:
+      - ./sca-backend/firebase-credentials.json:/app/firebase-credentials.json
     depends_on:
       redis:
         condition: service_healthy

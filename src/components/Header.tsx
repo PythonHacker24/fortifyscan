@@ -15,9 +15,9 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/#features" className="text-gray-400 hover:text-blue-400 transition-colors">Features</Link>
             <Link href="/#workflow" className="text-gray-400 hover:text-blue-400 transition-colors">How it Works</Link>
-            <Link href="/#pricing" className="text-gray-400 hover:text-blue-400 transition-colors">Pricing</Link>
-            <Link href="/instantreview" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
-              Free Code Review <ArrowRight className="w-4 h-4" />
+            <Link href="/pricing" className="text-gray-400 hover:text-blue-400 transition-colors">Pricing</Link>
+            <Link href="/signin" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+              Sign In <ArrowRight className="w-4 h-4" />
             </Link>
           </nav>
         </div>
