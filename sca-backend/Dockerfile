@@ -30,7 +30,7 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
-# Copy the binary from builder
+# Copy the binary credentials from builder
 COPY --from=builder /app/main .
 
 # Change ownership to non-root user

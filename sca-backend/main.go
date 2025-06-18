@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"sca-backend/internal/config"
+	"sca-backend/internal/firebase"
 	"sca-backend/internal/handlers"
 	"sca-backend/internal/middleware"
 )
@@ -34,6 +35,11 @@ func main() {
 	// Initialize Firebase
 	if err := config.InitFirebase(); err != nil {
 		log.Fatal("Failed to initialize Firebase: ", err)
+	}
+
+	fsclient, err := firebase.Init()
+	if err != nil {
+		log.Fatal("failed to initialize firestore for cli api keys", err.Error())
 	}
 
 	// Create a new mux router
@@ -81,9 +87,9 @@ func main() {
 
 	// Set up routes with CORS middleware
 	mux.HandleFunc("/health", handlers.HealthHandler) // Health check endpoint (no auth required)
-	mux.HandleFunc("/api/analyze-code", middleware.AuthMiddleware(handlers.AnalyzeHandler))
-	mux.HandleFunc("/api/stats", middleware.AuthMiddleware(handlers.StatsHandler))
-	mux.HandleFunc("/api/feedback", middleware.AuthMiddleware(handlers.FeedbackHandler))
+	mux.HandleFunc("/api/analyze-code", middleware.AuthMiddleware(handlers.AnalyzeHandler, fsclient))
+	mux.HandleFunc("/api/stats", middleware.AuthMiddleware(handlers.StatsHandler, fsclient))
+	mux.HandleFunc("/api/feedback", middleware.AuthMiddleware(handlers.FeedbackHandler, fsclient))
 
 	// API key routes (protected by Firebase Auth)
 	mux.HandleFunc("/api/key/generate", middleware.FirebaseAuthMiddleware(handlers.GenerateAPIKeyHandler))

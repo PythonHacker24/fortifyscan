@@ -17,19 +17,14 @@ import (
 )
 
 var (
-	apiKey string
 	rdb    *redis.Client
 	ctx    = context.Background()
+	apiKey string
 )
 
 // SetAPIKey sets the API key for the application
 func SetAPIKey(key string) {
 	apiKey = key
-}
-
-// GetAPIKey returns the current API key
-func GetAPIKey() string {
-	return apiKey
 }
 
 // SetRedisClient sets the Redis client for the application
