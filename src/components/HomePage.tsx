@@ -149,9 +149,9 @@ export default function HomePage() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             {/* hover:bg-blue-700 */}
-            <button className="bg-blue-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2">
               <RocketIcon className="w-5 h-5" />
-              Try MVP CLI Stage I for FREE
+              <Link href="/installation">Try MVP CLI Stage I for FREE</Link>
             </button>
             <button className="border border-gray-700 hover:border-yellow-500 text-gray-300 hover:text-yellow-400 px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center justify-center gap-2">
               <StarIcon className="w-5 h-5" />
