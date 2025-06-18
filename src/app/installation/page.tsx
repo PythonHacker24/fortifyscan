@@ -57,6 +57,26 @@ export default function InstallationPage() {
           </p>
         </div>
 
+        {/* Video Section */}
+        <div className="max-w-4xl mx-auto mb-20">
+          <div className="relative bg-gray-900 rounded-lg border border-gray-800 overflow-hidden transform hover:scale-[1.02] transition-all duration-300">
+            {/* Glow Effect */}
+            <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full transform -translate-y-1/2 top-1/2 animate-pulse" />
+            
+            {/* Video Container */}
+            <div className="relative aspect-video">
+              <video 
+                className="w-full h-full object-cover"
+                controls
+                poster="/video-thumbnail.jpg" // You can add a thumbnail image
+              >
+                <source src="/installation-demo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-4xl mx-auto">
           {steps.map((step, index) => (
             <div key={index} className="mb-12 last:mb-0">
