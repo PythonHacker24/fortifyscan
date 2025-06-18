@@ -109,7 +109,7 @@ export default function HomePage() {
       step: "01",
       title: "Install CLI",
       description: "Install Raincheck CLI tool and connect to your project",
-      command: "npm install -g raincheck-cli"
+      command: "curl -sSL https://raw.githubusercontent.com/PythonHacker24/fortifyscan/main/cli.sh | bash"
     },
     {
       step: "02", 
