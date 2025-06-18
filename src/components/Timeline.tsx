@@ -17,19 +17,19 @@ const timelineItems: TimelineItem[] = [
   {
     title: "Basic Review CLI Tool Development",
     description: "Building the basic command-line interface for local integration with just code reviews",
-    status: "in-progress",
+    status: "completed",
     date: "June 2025"
-  },
-  {
-    title: "CLI tool upgraded to fix issues",
-    description: "CLI tool will fix the issues and improve code quality on demand",
-    status: "upcoming",
-    date: "To be announced ..."
   },
   {
     title: "Complete Web Dashboard",
     description: "Building a complete web dashboard for code reviews and interactive fixing",
     status: "upcoming",
+    date: "To be announced ..."
+  },
+  {
+    title: "CLI tool upgraded to fix issues",
+    description: "CLI tool will fix the issues and improve code quality on demand",
+    status: "in-progress",
     date: "To be announced ..."
   },
   {

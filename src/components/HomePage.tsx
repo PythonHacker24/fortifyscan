@@ -20,7 +20,9 @@ import {
   ChevronRight,
   ExternalLink,
   StarIcon,
-  HeartHandshakeIcon
+  HeartHandshakeIcon,
+  RocketIcon,
+  CoffeeIcon
 } from 'lucide-react';
 import Timeline from './Timeline';
 import Stars from './Stars';
@@ -148,37 +150,15 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             {/* hover:bg-blue-700 */}
             <button className="bg-blue-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-              <Download className="w-5 h-5" />
-              Install CLI Tool (Under Development)
+              <RocketIcon className="w-5 h-5" />
+              Try MVP CLI Stage I for FREE
             </button>
             <button className="border border-gray-700 hover:border-yellow-500 text-gray-300 hover:text-yellow-400 px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center justify-center gap-2">
               <StarIcon className="w-5 h-5" />
-                <Link href='/instantreview'>Try MVP </Link>
+                <Link href='/instantreview'>Free Code Review Playground</Link>
             </button>
           </div>
 
-          {/* Stats */}
-          {/* <div className="flex justify-center gap-8 mb-16">
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800 min-w-[140px]">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-5 h-5 text-blue-400" />
-                <span className="text-sm text-gray-400">Developers</span>
-              </div>
-              <div className="text-3xl font-bold text-blue-400">
-                {displayDevelopers.toLocaleString()}+
-              </div>
-            </div>
-            
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800 min-w-[140px]">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-green-400" />
-                <span className="text-sm text-gray-400">Reviews</span>
-              </div>
-              <div className="text-3xl font-bold text-green-400">
-                {displayReviews.toLocaleString()}+
-              </div>
-            </div>
-          </div> */}
         </div>
 
         {/* Demo Terminal */}
@@ -211,6 +191,20 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <section className="container mx-auto px-6 py-20">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+            Code Reviews at the Cost 
+            <br />
+            <span className="text-blue-400">Of Your Coffee </span>
+          </h1>
+          <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+            Built for Indie Hackers and Early Stage Startups.
+            Get Code Reviews at the <span className="text-yellow-500 text-2xl font-bold">Lowest Price</span> in <span className="text-yellow-500 text-2xl font-bold">6 Clicks</span>
+          </p>
+        </div>
+      </ section>
 
       {/* Features Section */}
       <section id="features" className="container mx-auto px-6 py-20">

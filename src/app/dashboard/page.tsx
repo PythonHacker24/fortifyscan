@@ -132,7 +132,7 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-8 bg-gray-900 rounded-lg border border-gray-800 p-6">
-            <h2 className="text-xl font-semibold text-gray-100 mb-4">Getting Started</h2>
+            <h2 className="text-xl font-semibold text-gray-100 mb-4">Getting Started for MVP Stage I</h2>
             <div className="space-y-4">
               <div>
                 <h3 className="text-blue-400 font-medium mb-2">1. Install the CLI</h3>
@@ -143,13 +143,13 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-blue-400 font-medium mb-2">2. Configure your API key</h3>
                 <code className="block bg-gray-800 rounded-lg p-4 text-sm text-gray-300">
-                  raincheck config set-api-key YOUR_API_KEY
+                  raincheck login YOUR_API_KEY
                 </code>
               </div>
               <div>
                 <h3 className="text-blue-400 font-medium mb-2">3. Start reviewing code</h3>
                 <code className="block bg-gray-800 rounded-lg p-4 text-sm text-gray-300">
-                  raincheck review --branch feature/new-feature
+                  raincheck review all
                 </code>
               </div>
             </div>

@@ -7,7 +7,7 @@ export default function Announcement() {
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-center gap-2 text-sm text-blue-400">
           <Megaphone className="w-4 h-4" />
-          <p>Raincheck is under development and MVP testing phase. Your support through is appreciated!</p>
+          <p>Raincheck is under development and MVP testing phase. Your support through feedback is appreciated!</p>
         </div>
       </div>
     </div>

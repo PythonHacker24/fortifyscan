@@ -62,7 +62,8 @@ export default function PricingPage() {
         <div className="text-center mb-12">
           <h2 className="text-base font-semibold leading-7 text-blue-400">Pricing</h2>
           <p className="mt-2 text-4xl font-bold tracking-tight text-blue-400 sm:text-5xl">
-            Choose the right plan for&nbsp;you
+            {/* Choose the right plan for&nbsp;you */}
+            Under Construction - Planning Best Prices for You
           </p>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-400">
