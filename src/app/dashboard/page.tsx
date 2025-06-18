@@ -137,7 +137,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-blue-400 font-medium mb-2">1. Install the CLI</h3>
                 <code className="block bg-gray-800 rounded-lg p-4 text-sm text-gray-300">
-                  npm install -g raincheck-cli
+                curl -sSL https://raw.githubusercontent.com/PythonHacker24/fortifyscan/main/cli.sh | bash 
                 </code>
               </div>
               <div>
