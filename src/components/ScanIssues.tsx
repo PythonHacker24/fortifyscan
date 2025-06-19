@@ -1,7 +1,31 @@
 import React from 'react';
 import { Shield, Zap, Code, FileText, Users, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
-function getSeverityColor(severity) {
+// Type definitions (copied from CodeReviewApp.tsx)
+interface Issue {
+  severity: 'high' | 'medium' | 'low';
+  type: string;
+  description: string;
+  line?: number;
+  suggestion: string;
+}
+
+interface CategoryData {
+  score: number;
+  issues: Issue[];
+}
+
+interface ReviewData {
+  overall_score: number;
+  security: CategoryData;
+  performance: CategoryData;
+  code_quality: CategoryData;
+  maintainability: CategoryData;
+  best_practices: CategoryData;
+  suggestions: string[];
+}
+
+function getSeverityColor(severity: string): string {
   switch (severity?.toLowerCase()) {
     case 'high': return 'text-red-400 bg-red-950';
     case 'medium': return 'text-yellow-400 bg-yellow-950';
@@ -10,7 +34,7 @@ function getSeverityColor(severity) {
   }
 }
 
-function getSeverityIcon(severity) {
+function getSeverityIcon(severity: string): React.ReactElement {
   switch (severity) {
     case 'high':
       return <XCircle className="text-red-500" />;
@@ -23,14 +47,14 @@ function getSeverityIcon(severity) {
   }
 }
 
-function getScoreColor(score) {
+function getScoreColor(score: number): string {
   if (score >= 8) return 'text-green-400';
   if (score >= 6) return 'text-yellow-400';
   return 'text-red-400';
 }
 
-const CategoryIcon = ({ category }) => {
-  const icons = {
+const CategoryIcon: React.FC<{ category: string }> = ({ category }) => {
+  const icons: Record<string, React.ReactElement> = {
     security: <Shield className="w-5 h-5" />,
     performance: <Zap className="w-5 h-5" />,
     code_quality: <Code className="w-5 h-5" />,
@@ -40,7 +64,7 @@ const CategoryIcon = ({ category }) => {
   return icons[category] || <FileText className="w-5 h-5" />;
 };
 
-export default function ScanIssues({ reviewData }) {
+export default function ScanIssues({ reviewData }: { reviewData: ReviewData | null }) {
   if (!reviewData) return <div>No issues found.</div>;
   return (
     <div className="space-y-6">
@@ -58,7 +82,7 @@ export default function ScanIssues({ reviewData }) {
       {/* Categories */}
       {Object.entries(reviewData).filter(([key]) =>
         ['security', 'performance', 'code_quality', 'maintainability', 'best_practices'].includes(key)
-      ).map(([category, data]) => (
+      ).map(([category, data]: [string, CategoryData | undefined]) => (
         data && (
           <div key={category} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center justify-between mb-3">
@@ -72,9 +96,9 @@ export default function ScanIssues({ reviewData }) {
                 </span>
               )}
             </div>
-            {data.issues && data.issues.length > 0 && (
+            {Array.isArray(data.issues) && data.issues.length > 0 && (
               <div className="space-y-3">
-                {data.issues.map((issue, index) => (
+                {data.issues.map((issue: Issue, index: number) => (
                   <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
                     <div className="flex items-center gap-2 mb-2">
                       {getSeverityIcon(issue.severity)}
@@ -100,7 +124,7 @@ export default function ScanIssues({ reviewData }) {
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <h3 className="text-lg font-semibold text-blue-400 mb-3">General Suggestions</h3>
           <div className="space-y-2">
-            {reviewData.suggestions.map((suggestion, index) => (
+            {reviewData.suggestions.map((suggestion: string, index: number) => (
               <div key={index} className="flex items-start gap-2">
                 <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                 <p className="text-gray-300 text-sm">{suggestion}</p>
