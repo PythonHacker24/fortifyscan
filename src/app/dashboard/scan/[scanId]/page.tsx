@@ -42,6 +42,35 @@ interface ScanDetailsPageProps {
   params: Promise<{ scanId: string }>; // params is expected as a Promise by Next.js build
 }
 
+function normalizeKeys(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(normalizeKeys);
+  }
+  if (!obj || typeof obj !== 'object') return obj;
+  const map: Record<string, string> = {
+    BestPractices: 'best_practices',
+    Maintainability: 'maintainability',
+    CodeQuality: 'code_quality',
+    Performance: 'performance',
+    Security: 'security',
+    Suggestions: 'suggestions',
+    OverallScore: 'overall_score',
+    Score: 'score',
+    Issues: 'issues',
+    Type: 'type',
+    Severity: 'severity',
+    Description: 'description',
+    Line: 'line',
+    Suggestion: 'suggestion'
+  };
+  const newObj: any = {};
+  for (const key in obj) {
+    const mappedKey = map[key] || key;
+    newObj[mappedKey] = normalizeKeys(obj[key]);
+  }
+  return newObj;
+}
+
 export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
   // Use React.use to unwrap the params Promise
   const resolvedParams = use(params);
@@ -90,24 +119,32 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex">
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
       <Stars />
       {/* Left: Code */}
       <div className="w-1/2 p-8 border-r border-gray-800">
         <h2 className="text-xl font-bold mb-4">Code</h2>
-        <pre className="bg-gray-800 rounded-lg p-4 text-sm overflow-x-auto">
-          {scan.code || 'No code found for this scan.'}
-        </pre>
+        <div className="bg-gray-800 rounded-lg p-4 text-sm overflow-x-auto" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+          <code>
+            {String(scan.code || '')
+              .split('\n')
+              .map((line, idx) => (
+                <div key={idx} style={{ display: 'flex' }}>
+                  <span style={{ color: '#6b7280', minWidth: 32, textAlign: 'right', userSelect: 'none', marginRight: 12 }}>
+                    {idx + 1}
+                  </span>
+                  <span>{line}</span>
+                </div>
+              ))}
+          </code>
+        </div>
       </div>
       {/* Right: Issues */}
       <div className="w-1/2 p-8">
-        <h2 className="text-xl font-bold mb-4">Issues</h2>
+        <h2 className="text-xl font-bold mb-4">Review</h2>
         {reviewData ? (
           <>
-            <pre className="mb-4 bg-gray-900 rounded p-2 text-xs text-gray-400 overflow-x-auto">
-              {JSON.stringify(reviewData, null, 2)}
-            </pre>
-            <ScanIssues reviewData={reviewData} />
+            <ScanIssues reviewData={normalizeKeys(reviewData)} />
           </>
         ) : (
           <p className="text-gray-400">No detailed review data available for this scan.</p>

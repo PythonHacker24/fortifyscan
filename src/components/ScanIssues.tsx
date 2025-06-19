@@ -64,6 +64,25 @@ const CategoryIcon: React.FC<{ category: string }> = ({ category }) => {
   return icons[category] || <FileText className="w-5 h-5" />;
 };
 
+function normalizeKeys(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  const map: Record<string, string> = {
+    BestPractices: 'best_practices',
+    Maintainability: 'maintainability',
+    CodeQuality: 'code_quality',
+    Performance: 'performance',
+    Security: 'security',
+    Suggestions: 'suggestions',
+    OverallScore: 'overall_score'
+  };
+  const newObj: any = {};
+  for (const key in obj) {
+    const mappedKey = map[key] || key;
+    newObj[mappedKey] = obj[key];
+  }
+  return newObj;
+}
+
 export default function ScanIssues({ reviewData }: { reviewData: ReviewData | null }) {
   if (!reviewData) return <div>No issues found.</div>;
   return (
