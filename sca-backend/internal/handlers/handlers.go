@@ -13,6 +13,8 @@ import (
 	"sca-backend/internal/models"
 	"sca-backend/internal/services"
 
+	"cloud.google.com/go/firestore"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -105,8 +107,18 @@ func StatsHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
+type Handler struct {
+	FirebaseClient *firestore.Client // or your specific Firebase client type
+}
+
+func NewHandler(firestoreClient *firestore.Client) *Handler {
+	return &Handler{
+		FirebaseClient: firestoreClient,
+	}
+}
+
 // AnalyzeHandler handles code analysis requests
-func AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		SendError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -149,6 +161,26 @@ func AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 	if rdb != nil {
 		if err := rdb.Incr(ctx, "analyses").Err(); err != nil {
 			log.Printf("Failed to increment analysis count: %v", err)
+		}
+	}
+
+	if h.FirebaseClient != nil {
+		scanID := uuid.New().String()
+
+		scanData := map[string]interface{}{
+			"code":           req.Code,
+			"analysisResult": analysis,
+			"timestamp":      time.Now(),
+		}
+
+		_, err := h.FirebaseClient.Collection("code_scans").
+			Doc(r.Context().Value("apiKey").(string)).
+			Set(ctx, map[string]interface{}{
+				scanID: scanData,
+			}, firestore.MergeAll) // Merge into existing document
+
+		if err != nil {
+			log.Printf("Failed to store analysis in Firestore: %v", err)
 		}
 	}
 

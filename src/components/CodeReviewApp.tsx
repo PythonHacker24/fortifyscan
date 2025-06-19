@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import Review from './Review';
 import Stars from '@/components/Stars';
-import Footer from './Footer';
 
 // Type definitions
 interface Issue {

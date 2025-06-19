@@ -15,6 +15,16 @@ var (
 	client *firestore.Client
 )
 
+type Handler struct {
+	FirebaseClient *firebase.App // or your specific Firebase client type
+}
+
+func NewHandler(firebaseClient *firebase.App) *Handler {
+	return &Handler{
+		FirebaseClient: firebaseClient,
+	}
+}
+
 // APIKeyData represents the structure of an API key document in Firestore
 type APIKeyData struct {
 	CreatedAt string `firestore:"createdAt"`
