@@ -137,16 +137,18 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
-            Code Reviews Into
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+            Improve Code Quality With 
             <br />
-            <span className="text-blue-400">Local Pipeline</span>
+            <span className="text-blue-400">Reviews & Fixes</span>
           </h1>
           <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
-            Integrate AI-powered code reviews into your local development workflow. 
+            Integrate AI-powered code reviews and fixes into your local development workflow. 
             Review in the browser, apply changes via CLI, and commit with intelligent messages.
           </p>
-          
+          <p className="text-xl text-yellow-400 mb-8 max-w-3xl mx-auto">
+            🚀 It's like a Senior Developer reviewing and fixing your code 
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             {/* hover:bg-blue-700 */}
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2">
@@ -195,7 +197,7 @@ export default function HomePage() {
       <section className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
-            Code Reviews at the Cost 
+            Code Quality Improved at the Cost 
             <br />
             <span className="text-blue-400">Of Your Coffee </span>
           </h1>

@@ -133,7 +133,9 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
                   <span style={{ color: '#6b7280', minWidth: 32, textAlign: 'right', userSelect: 'none', marginRight: 12 }}>
                     {idx + 1}
                   </span>
-                  <span>{line}</span>
+                  <pre style={{ margin: 0, padding: 0, background: 'none', display: 'inline', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', whiteSpace: 'pre' }}>
+                    {line || '\u00A0'}
+                  </pre>
                 </div>
               ))}
           </code>
