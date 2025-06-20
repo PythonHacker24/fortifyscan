@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sca-backend/internal/firebase"
-	"sca-backend/internal/handlers"
+	handlers "sca-backend/internal/handlers"
 
 	"cloud.google.com/go/firestore"
 )
@@ -34,7 +34,7 @@ func AuthMiddleware(next http.HandlerFunc, fsclient *firestore.Client) http.Hand
 		}
 
 		// Add API key to context (optional, but good practice if handlers need it)
-		ctx := context.WithValue(r.Context(), "apiKey", apiKey)
+		ctx := context.WithValue(r.Context(), handlers.ApiKeyContextKey, apiKey)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

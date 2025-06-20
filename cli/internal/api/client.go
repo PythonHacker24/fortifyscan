@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	baseURL = "http://143.244.141.172:1000"
+	// baseURL = "http://143.244.141.172:1000"
+	baseURL = "http://localhost:1000"
 )
 
 // Issue represents a single code issue

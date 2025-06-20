@@ -142,7 +142,7 @@ export default function HomePage() {
             <br />
             <span className="text-blue-400">Reviews & Fixes</span>
           </h1>
-          <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-400 mb-8 max-w-3xl mx-auto py-8">
             Integrate AI-powered code reviews and fixes into your local development workflow. 
             Review in the browser, apply changes via CLI, and commit with intelligent messages.
           </p>

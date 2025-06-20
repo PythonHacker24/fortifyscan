@@ -24,6 +24,10 @@ var (
 	apiKey string
 )
 
+type contextKey string
+
+const ApiKeyContextKey = contextKey("apiKey")
+
 // SetAPIKey sets the API key for the application
 func SetAPIKey(key string) {
 	apiKey = key
@@ -165,7 +169,15 @@ func (h *Handler) AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.FirebaseClient != nil {
+		apiKeyVal := r.Context().Value(ApiKeyContextKey)
+		apiKeyStr, ok := apiKeyVal.(string)
+		if !ok || apiKeyStr == "" {
+			SendError(w, "API key missing from context", http.StatusUnauthorized)
+			return
+		}
+
 		scanID := uuid.New().String()
+		fmt.Printf("Storing scan: apiKey=%s, scanID=%s", apiKeyStr, scanID)
 
 		scanData := map[string]interface{}{
 			"code":           req.Code,
@@ -174,13 +186,15 @@ func (h *Handler) AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		_, err := h.FirebaseClient.Collection("code_scans").
-			Doc(r.Context().Value("apiKey").(string)).
+			Doc(apiKeyStr).
 			Set(ctx, map[string]interface{}{
 				scanID: scanData,
-			}, firestore.MergeAll) // Merge into existing document
+			}, firestore.MergeAll)
 
 		if err != nil {
-			log.Printf("Failed to store analysis in Firestore: %v", err)
+			log.Printf("Failed to store analysis in Firestore: apiKey=%s, scanID=%s, error=%v", apiKeyStr, scanID, err)
+		} else {
+			log.Printf("Successfully stored analysis in Firestore: apiKey=%s, scanID=%s", apiKeyStr, scanID)
 		}
 	}
 
