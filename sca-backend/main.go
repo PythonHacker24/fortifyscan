@@ -90,6 +90,7 @@ func main() {
 	// Set up routes with CORS middleware
 	mux.HandleFunc("/health", handlers.HealthHandler) // Health check endpoint (no auth required)
 	mux.HandleFunc("/api/analyze-code", middleware.AuthMiddleware(analyzeHandler.AnalyzeHandler, fsclient))
+	mux.HandleFunc("/api/issues/fix", middleware.AuthMiddleware(analyzeHandler.FixIssuesHandler, fsclient))
 	mux.HandleFunc("/api/stats", middleware.AuthMiddleware(handlers.StatsHandler, fsclient))
 	mux.HandleFunc("/api/feedback", middleware.AuthMiddleware(handlers.FeedbackHandler, fsclient))
 

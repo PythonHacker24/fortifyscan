@@ -1,5 +1,7 @@
 import React from 'react';
-import { Shield, Zap, Code, FileText, Users, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Shield, Zap, Code, FileText, Users, CheckCircle, AlertTriangle, XCircle, SparklesIcon } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
 // Type definitions (copied from CodeReviewApp.tsx)
 interface Issue {
@@ -83,7 +85,12 @@ function normalizeKeys(obj: any): any {
   return newObj;
 }
 
-export default function ScanIssues({ reviewData }: { reviewData: ReviewData | null }) {
+interface ScanIssuesProps {
+  reviewData: ReviewData | null;
+  code: string;
+}
+
+export default function ScanIssues({ reviewData, code }: ScanIssuesProps) {
   if (!reviewData) return <div>No issues found.</div>;
   return (
     <div className="space-y-6">
@@ -118,7 +125,35 @@ export default function ScanIssues({ reviewData }: { reviewData: ReviewData | nu
             {Array.isArray(data.issues) && data.issues.length > 0 && (
               <div className="space-y-3">
                 {data.issues.map((issue: Issue, index: number) => (
-                  <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                  <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600 relative">
+                    {/* Fix Issue Button */}
+                    <button
+                      className="absolute -top-3 -left-3 flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-2 py-1 rounded shadow z-10"
+                      style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
+                      title="Fix Issue"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(`${API_URL}/api/issues/fix`, {
+                            method: 'POST',
+                            headers: { 
+                              'Content-Type': 'application/json',
+                              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
+                            },
+                            body: JSON.stringify({
+                              code,
+                              suggestion: issue.suggestion,
+                              problem: issue.description
+                            })
+                          });
+                          if (!response.ok) throw new Error('Failed to fix issue');
+                          alert('Issue fix request sent!');
+                        } catch (err) {
+                          alert('Failed to send fix request.');
+                        }
+                      }}
+                    >
+                      <SparklesIcon className="w-3 h-3 mr-1" /> Fix Issue
+                    </button>
                     <div className="flex items-center gap-2 mb-2">
                       {getSeverityIcon(issue.severity)}
                       <span className={`text-sm ${getSeverityColor(issue.severity)}`}>

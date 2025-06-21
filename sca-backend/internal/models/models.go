@@ -73,3 +73,17 @@ type FeedbackRequest struct {
 	Liked   bool   `json:"liked"`
 	Comment string `json:"comment"`
 }
+
+// FixIssuesResponse represents the response from the fix issues agent endpoint
+// success: whether the fix was successful
+// diff: the code diff as a string
+// explanation: explanation of the fix
+// confidence: confidence score as integer
+// changelog: changelog of the fix
+type FixIssuesResponse struct {
+	Success     bool   `json:"success"`
+	Diff        string `json:"diff"`
+	Explanation string `json:"explanation"`
+	Confidence  int    `json:"confidence"`
+	Changelog   string `json:"changelog"`
+}

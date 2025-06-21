@@ -202,6 +202,52 @@ func (h *Handler) AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(analysis)
 }
 
+// FixIssuesHandler handles code fixing requests
+func (h *Handler) FixIssuesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		SendError(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		SendError(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if len(body) > 10*1024*1024 {
+		SendError(w, "Request body too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	type FixIssuesRequest struct {
+		Code       string `json:"code"`
+		Suggestion string `json:"suggestion"`
+		Problem    string `json:"problem"`
+	}
+
+	var req FixIssuesRequest
+	if err := json.Unmarshal(body, &req); err != nil {
+		SendError(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+
+	if strings.TrimSpace(req.Code) == "" || strings.TrimSpace(req.Suggestion) == "" || strings.TrimSpace(req.Problem) == "" {
+		SendError(w, "Code, suggestion, and problem cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	fixResp, err := services.FixIssues(req.Code, req.Suggestion, req.Problem)
+	if err != nil {
+		SendError(w, fmt.Sprintf("FixIssues failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fixResp)
+}
+
 // FeedbackHandler handles feedback requests
 func FeedbackHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

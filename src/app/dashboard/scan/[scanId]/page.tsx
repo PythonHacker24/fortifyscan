@@ -146,7 +146,7 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
         <h2 className="text-xl font-bold mb-4">Review</h2>
         {reviewData ? (
           <>
-            <ScanIssues reviewData={normalizeKeys(reviewData)} />
+            <ScanIssues reviewData={normalizeKeys(reviewData)} code={scan.code || ''} />
           </>
         ) : (
           <p className="text-gray-400">No detailed review data available for this scan.</p>
