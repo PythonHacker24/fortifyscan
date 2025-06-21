@@ -65,37 +65,38 @@ func FixIssues(code, suggestion, problem string) (*models.FixIssuesResponse, err
 		return nil, fmt.Errorf("agent service temporarily unavailable (status %d)", httpResp.StatusCode)
 	}
 
-	var fixResp models.DigitalOceanResponse
-	if err := json.Unmarshal(respBody, &fixResp); err != nil {
-		return nil, fmt.Errorf("failed to parse agent response: %v", err)
+	var doResponse models.DigitalOceanResponse
+	if err := json.Unmarshal(respBody, &doResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse AI response: %v", err)
 	}
 
 	// Check for API errors
-	if fixResp.Error != nil {
-		return nil, fmt.Errorf("AI API error: %s", fixResp.Error.Message)
+	if doResponse.Error != nil {
+		return nil, fmt.Errorf("AI API error: %s", doResponse.Error.Message)
 	}
 
-	if len(fixResp.Choices) == 0 {
+	if len(doResponse.Choices) == 0 {
 		return nil, fmt.Errorf("no response from AI model")
 	}
 
-	content := fixResp.Choices[0].Message.Content
+	content := doResponse.Choices[0].Message.Content
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
 	if start >= 0 && end >= 0 && end > start {
 		content = content[start : end+1]
 	}
 
-	var fixes models.FixIssuesResponse
-	if err := json.Unmarshal([]byte(content), &fixes); err != nil {
-		fixes = models.FixIssuesResponse{
+	var fixResp models.FixIssuesResponse
+	if err := json.Unmarshal([]byte(content), &fixResp); err != nil {
+		// Fallback: create a basic response if JSON parsing fails
+		fixResp = models.FixIssuesResponse{
 			Success:     false,
 			Diff:        "",
-			Explanation: "",
-			Confidence:  0,
-			Changelog:   "",
+			Explanation: "Unable to parse AI response",
+			Confidence:  1,
+			Changelog:   "Failed to generate fix due to parsing error",
 		}
 	}
 
-	return &fixes, nil
+	return &fixResp, nil
 }
