@@ -62,9 +62,18 @@ func main() {
 			// Check if the origin is allowed
 			allowed := false
 			for _, allowedOrigin := range allowedOrigins {
-				if origin == allowedOrigin || (strings.HasSuffix(allowedOrigin, "*") && strings.HasSuffix(origin, strings.TrimPrefix(allowedOrigin, "*"))) {
+				if origin == allowedOrigin {
 					allowed = true
 					break
+				}
+				// Handle wildcard patterns
+				if strings.Contains(allowedOrigin, "*") {
+					// Convert wildcard pattern to regex-like matching
+					pattern := strings.ReplaceAll(allowedOrigin, "*", "")
+					if strings.HasSuffix(origin, pattern) {
+						allowed = true
+						break
+					}
 				}
 			}
 
