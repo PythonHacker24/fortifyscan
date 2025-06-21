@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shield, Zap, Code, FileText, Users, CheckCircle, AlertTriangle, XCircle, SparklesIcon } from 'lucide-react';
+import FixIssuePopup from './FixIssuePopup';
+import { applyPatch, parsePatch } from 'diff';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:1000';
 
@@ -89,10 +91,64 @@ interface ScanIssuesProps {
   reviewData: ReviewData | null;
   code: string;
   api_key: string;
+  onCodeUpdate?: (newCode: string, highlightedLines: number[]) => void;
 }
 
-export default function ScanIssues({ reviewData, code, api_key }: ScanIssuesProps) {
+interface FixIssueResponse {
+  success: boolean;
+  diff: string;
+  explanation: string;
+  confidence: number;
+  changelog: string;
+}
+
+export default function ScanIssues({ reviewData, code, api_key, onCodeUpdate }: ScanIssuesProps) {
+  const [fixResponse, setFixResponse] = useState<FixIssueResponse | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localCode, setLocalCode] = useState(code);
+
+  const handleApplyFix = (diff: string) => {
+    console.log("Attempting to apply diff:", diff);
+    try {
+      const newCode = applyPatch(localCode, diff);
+      if (newCode === false) {
+        setError('Failed to apply patch. The diff may be invalid for the current code.');
+        setIsPopupOpen(false); // Close the popup
+        return;
+      }
+
+      const highlightedLines: number[] = [];
+      const parsedDiff = parsePatch(diff);
+      
+      parsedDiff.forEach(patch => {
+        patch.hunks.forEach(hunk => {
+          let newLineNumber = hunk.newStart;
+          hunk.lines.forEach(line => {
+            if (line.startsWith('+')) {
+              highlightedLines.push(newLineNumber);
+            }
+            if (!line.startsWith('-')) {
+              newLineNumber++;
+            }
+          });
+        });
+      });
+
+      setLocalCode(newCode);
+      if (onCodeUpdate) onCodeUpdate(newCode, highlightedLines);
+      setIsPopupOpen(false);
+      setFixResponse(null);
+    } catch (e) {
+      console.error("Patching error:", e);
+      setError('An unexpected error occurred while applying the patch.');
+      setIsPopupOpen(false);
+    }
+  };
+
   if (!reviewData) return <div>No issues found.</div>;
+  
   return (
     <div className="space-y-6">
       {/* Overall Score */}
@@ -129,10 +185,13 @@ export default function ScanIssues({ reviewData, code, api_key }: ScanIssuesProp
                   <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600 relative">
                     {/* Fix Issue Button */}
                     <button
-                      className="absolute -top-3 -left-3 flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-2 py-1 rounded shadow z-10"
+                      className="absolute -top-3 -left-3 flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-2 py-1 rounded shadow z-10 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
                       title="Fix Issue"
+                      disabled={isLoading}
                       onClick={async () => {
+                        setIsLoading(true);
+                        setError(null);
                         try {
                           const response = await fetch(`${API_URL}/api/issues/fix`, {
                             method: 'POST',
@@ -141,19 +200,35 @@ export default function ScanIssues({ reviewData, code, api_key }: ScanIssuesProp
                               'X-API-Key': api_key,
                             },
                             body: JSON.stringify({
-                              code,
+                              code: localCode,
                               suggestion: issue.suggestion,
                               problem: issue.description
                             })
                           });
-                          if (!response.ok) throw new Error('Failed to fix issue');
-                          alert('Issue fix request sent!');
+                          
+                          if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Failed to fix issue: ${response.status} ${response.statusText} - ${errorText}`);
+                          }
+                          
+                          const responseData: FixIssueResponse = await response.json();
+
+                          if (responseData.success) {
+                            setFixResponse(responseData);
+                            setIsPopupOpen(true);
+                          } else {
+                            throw new Error(responseData.explanation || 'API failed to generate a fix. The backend reported an unsuccessful operation.');
+                          }
                         } catch (err) {
-                          alert('Failed to send fix request.');
+                          console.error("API request failed:", err);
+                          setError((err as Error).message || 'Failed to send fix request. Please try again.');
+                        } finally {
+                          setIsLoading(false);
                         }
                       }}
                     >
-                      <SparklesIcon className="w-3 h-3 mr-1" /> Fix Issue
+                      <SparklesIcon className="w-3 h-3 mr-1" /> 
+                      {isLoading ? 'Fixing...' : 'Fix Issue'}
                     </button>
                     <div className="flex items-center gap-2 mb-2">
                       {getSeverityIcon(issue.severity)}
@@ -188,6 +263,24 @@ export default function ScanIssues({ reviewData, code, api_key }: ScanIssuesProp
           </div>
         </div>
       )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-900 border border-red-700 rounded-lg p-4">
+          <p className="text-red-300 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Fix Issue Popup */}
+      <FixIssuePopup
+        isOpen={isPopupOpen}
+        onClose={() => {
+          setIsPopupOpen(false);
+          setFixResponse(null);
+        }}
+        response={fixResponse}
+        onApplyFix={handleApplyFix}
+      />
     </div>
   );
 } 

@@ -1,0 +1,44 @@
+use std::ptr;
+use std::mem;
+
+fn f1(x: usize) -> usize {
+    let a = [0u8; 16];
+    let b = x * 512;
+    if b >= 16 {
+        panic!("Buffer overflow: b exceeds array bounds");
+    }
+    let c = unsafe { *a.as_ptr().add(b) };
+    c as usize
+}
+
+fn f2() {
+    let mut a = vec![1, 2, 3];
+    unsafe {
+        let b = a.as_mut_ptr();
+        let c = b.add(10);
+        *c = 42;
+    }
+}
+
+fn f3() {
+    let a: u8 = 250;
+    let b = a + 10;
+    println!("{}", b);
+}
+
+fn f4() {
+    let a = Box::new(5);
+    let b = Box::into_raw(a);
+    unsafe {
+        let _ = Box::from_raw(b);
+        let _ = Box::from_raw(b);
+    }
+}
+
+fn main() {
+    let _ = f1(1);
+    f2();
+    f3();
+    f4();
+}
+
