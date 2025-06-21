@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"sca-backend/internal/models"
 )
@@ -21,7 +22,21 @@ func FixIssues(code, suggestion, problem string) (*models.FixIssuesResponse, err
 		"suggestion": suggestion,
 		"problem":    problem,
 	}
-	jsonBody, err := json.Marshal(requestBody)
+	req, err := json.Marshal(requestBody)
+	if err != nil {
+	}
+	reqStr := string(req)
+	doReq := models.DigitalOceanRequest{
+		Messages: []models.DigitalOceanMessage{
+			{
+				Role:    "user",
+				Content: reqStr,
+			},
+		},
+		MaxTokens:   2000,
+		Temperature: 0.1, // Low temperature for consistent JSON output
+	}
+	jsonBody, err := json.Marshal(doReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize request: %v", err)
 	}
@@ -34,7 +49,7 @@ func FixIssues(code, suggestion, problem string) (*models.FixIssuesResponse, err
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", os.Getenv("DIGITALOCEAN_FIX_API_KEY")))
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 60 * 1000000000}
 	httpResp, err := client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to contact fix issues agent: %v", err)
@@ -50,10 +65,37 @@ func FixIssues(code, suggestion, problem string) (*models.FixIssuesResponse, err
 		return nil, fmt.Errorf("agent service temporarily unavailable (status %d)", httpResp.StatusCode)
 	}
 
-	var fixResp models.FixIssuesResponse
+	var fixResp models.DigitalOceanResponse
 	if err := json.Unmarshal(respBody, &fixResp); err != nil {
 		return nil, fmt.Errorf("failed to parse agent response: %v", err)
 	}
 
-	return &fixResp, nil
+	// Check for API errors
+	if fixResp.Error != nil {
+		return nil, fmt.Errorf("AI API error: %s", fixResp.Error.Message)
+	}
+
+	if len(fixResp.Choices) == 0 {
+		return nil, fmt.Errorf("no response from AI model")
+	}
+
+	content := fixResp.Choices[0].Message.Content
+	start := strings.Index(content, "{")
+	end := strings.LastIndex(content, "}")
+	if start >= 0 && end >= 0 && end > start {
+		content = content[start : end+1]
+	}
+
+	var fixes models.FixIssuesResponse
+	if err := json.Unmarshal([]byte(content), &fixes); err != nil {
+		fixes = models.FixIssuesResponse{
+			Success:     false,
+			Diff:        "",
+			Explanation: "",
+			Confidence:  0,
+			Changelog:   "",
+		}
+	}
+
+	return &fixes, nil
 }
