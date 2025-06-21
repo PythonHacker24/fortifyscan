@@ -16,6 +16,7 @@ func AuthMiddleware(next http.HandlerFunc, fsclient *firestore.Client) http.Hand
 		// Get API key from header
 		apiKey := r.Header.Get("X-API-Key")
 		if apiKey == "" {
+			log.Printf("api key empty")
 			handlers.SendError(w, "API key is required", http.StatusUnauthorized)
 			return
 		}
@@ -23,12 +24,13 @@ func AuthMiddleware(next http.HandlerFunc, fsclient *firestore.Client) http.Hand
 		// Verify API key using Firebase
 		valid, err := firebase.VerifyAPIKey(fsclient, r.Context(), apiKey)
 		if err != nil {
-			log.Printf("api key middleware validation error" + err.Error())
+			log.Printf("api key middleware validation error: " + err.Error())
 			handlers.SendError(w, "Error verifying API key", http.StatusInternalServerError)
 			return
 		}
 
 		if !valid {
+			log.Printf("invalid api key: " + apiKey)
 			handlers.SendError(w, "Invalid API key", http.StatusUnauthorized)
 			return
 		}

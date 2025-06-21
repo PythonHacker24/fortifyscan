@@ -80,7 +80,7 @@ func Init() (*firestore.Client, error) {
 // VerifyAPIKey checks if the provided API key exists in any document's key field in the api_keys collection
 func VerifyAPIKey(client *firestore.Client, ctx context.Context, apiKey string) (bool, error) {
 	if client == nil {
-		return false, fmt.Errorf("Firestore client not initialized")
+		return false, fmt.Errorf("firestore client not initialized")
 	}
 
 	iter := client.Collection("api_keys").Where("key", "==", apiKey).Limit(1).Documents(ctx)
@@ -88,6 +88,7 @@ func VerifyAPIKey(client *firestore.Client, ctx context.Context, apiKey string) 
 
 	_, err := iter.Next()
 	if err == iterator.Done {
+		log.Printf("Key that wasn't found in database: %s", apiKey)
 		return false, fmt.Errorf("api key not found") // API key not found
 	}
 	if err != nil {

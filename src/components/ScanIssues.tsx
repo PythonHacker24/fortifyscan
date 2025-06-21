@@ -88,9 +88,10 @@ function normalizeKeys(obj: any): any {
 interface ScanIssuesProps {
   reviewData: ReviewData | null;
   code: string;
+  api_key: string;
 }
 
-export default function ScanIssues({ reviewData, code }: ScanIssuesProps) {
+export default function ScanIssues({ reviewData, code, api_key }: ScanIssuesProps) {
   if (!reviewData) return <div>No issues found.</div>;
   return (
     <div className="space-y-6">
@@ -137,7 +138,7 @@ export default function ScanIssues({ reviewData, code }: ScanIssuesProps) {
                             method: 'POST',
                             headers: { 
                               'Content-Type': 'application/json',
-                              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
+                              'X-API-Key': api_key,
                             },
                             body: JSON.stringify({
                               code,
