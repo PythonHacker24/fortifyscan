@@ -6,6 +6,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import Stars from "@/components/Stars";
 import ScanIssues from "@/components/ScanIssues";
+import { FloatingSparkleButton, AllFixesPopup } from '@/components/Stars';
 
 // Type definitions (copied for consistency)
 interface Issue {
@@ -83,6 +84,9 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
   const [loading, setLoading] = useState(true);
   const [displayedCode, setDisplayedCode] = useState<string | null>(null);
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
+  const [appliedFixes, setAppliedFixes] = useState<any[]>([]); // Store applied fixes
+  const [fixedIssueKeys, setFixedIssueKeys] = useState<Set<string>>(new Set());
+  const [showAllFixes, setShowAllFixes] = useState(false);
 
   useEffect(() => {
     if (!apiKey || !scanId) return;
@@ -110,6 +114,29 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
     setHighlightedLines(linesToHighlight);
   };
 
+  const handleFixApplied = (fix: any) => {
+    setAppliedFixes((prev) => [...prev, fix]);
+    if (fix && fix._issueKey) {
+      setFixedIssueKeys(prev => new Set(prev).add(fix._issueKey));
+    }
+  };
+
+  const handleRemoveFix = (idx: number) => {
+    setAppliedFixes(prev => {
+      const removed = prev[idx];
+      const newArr = prev.slice();
+      newArr.splice(idx, 1);
+      if (removed && removed._issueKey) {
+        setFixedIssueKeys(prevKeys => {
+          const newKeys = new Set(prevKeys);
+          newKeys.delete(removed._issueKey);
+          return newKeys;
+        });
+      }
+      return newArr;
+    });
+  };
+
   if (loading) return <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center">Loading scan details...</div>;
   if (!scan) return <div className="min-h-screen bg-gray-950 text-gray-100 flex items-center justify-center">Scan or API Key not found.</div>;
 
@@ -128,43 +155,47 @@ export default function ScanDetailsPage({ params }: ScanDetailsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-      <Stars />
-      {/* Left: Code */}
-      <div className="w-1/2 p-8 border-r border-gray-800">
-        <h2 className="text-xl font-bold mb-4">Code</h2>
-        <div className="bg-gray-800 rounded-lg p-4 text-sm overflow-x-auto" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-          <code>
-            {(displayedCode !== null ? displayedCode : String(scan.code || ''))
-              .split('\n')
-              .map((line, idx) => (
-                <div key={idx} style={{ 
-                  display: 'flex',
-                  backgroundColor: highlightedLines.includes(idx + 1) ? 'rgba(255, 223, 186, 0.1)' : 'transparent',
-                  transition: 'background-color 0.3s ease-in-out'
-                }}>
-                  <span style={{ color: '#6b7280', minWidth: 32, textAlign: 'right', userSelect: 'none', marginRight: 12 }}>
-                    {idx + 1}
-                  </span>
-                  <pre style={{ margin: 0, padding: 0, background: 'none', display: 'inline', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', whiteSpace: 'pre' }}>
-                    {line || '\u00A0'}
-                  </pre>
-                </div>
-              ))}
-          </code>
+    <>
+      <div className="min-h-screen bg-gray-950 text-gray-100 flex" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+        <Stars />
+        {/* Left: Code */}
+        <div className="w-1/2 p-8 border-r border-gray-800">
+          <h2 className="text-xl font-bold mb-4">Code</h2>
+          <div className="bg-gray-800 rounded-lg p-4 text-sm overflow-x-auto" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+            <code>
+              {(displayedCode !== null ? displayedCode : String(scan.code || ''))
+                .split('\n')
+                .map((line, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex',
+                    backgroundColor: highlightedLines.includes(idx + 1) ? 'rgba(255, 223, 186, 0.1)' : 'transparent',
+                    transition: 'background-color 0.3s ease-in-out'
+                  }}>
+                    <span style={{ color: '#6b7280', minWidth: 32, textAlign: 'right', userSelect: 'none', marginRight: 12 }}>
+                      {idx + 1}
+                    </span>
+                    <pre style={{ margin: 0, padding: 0, background: 'none', display: 'inline', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', whiteSpace: 'pre' }}>
+                      {line || '\u00A0'}
+                    </pre>
+                  </div>
+                ))}
+            </code>
+          </div>
+        </div>
+        {/* Right: Issues */}
+        <div className="w-1/2 p-8">
+          <h2 className="text-xl font-bold mb-4">Review</h2>
+          {reviewData ? (
+            <>
+              <ScanIssues reviewData={normalizeKeys(reviewData)} code={displayedCode !== null ? displayedCode : scan.code || ''} api_key={apiKey || ''} onCodeUpdate={handleCodeUpdate} onFixApplied={handleFixApplied} fixedIssueKeys={fixedIssueKeys} />
+            </>
+          ) : (
+            <p className="text-gray-400">No detailed review data available for this scan.</p>
+          )}
         </div>
       </div>
-      {/* Right: Issues */}
-      <div className="w-1/2 p-8">
-        <h2 className="text-xl font-bold mb-4">Review</h2>
-        {reviewData ? (
-          <>
-            <ScanIssues reviewData={normalizeKeys(reviewData)} code={displayedCode !== null ? displayedCode : scan.code || ''} api_key={apiKey || ''} onCodeUpdate={handleCodeUpdate} />
-          </>
-        ) : (
-          <p className="text-gray-400">No detailed review data available for this scan.</p>
-        )}
-      </div>
-    </div>
+      <FloatingSparkleButton onClick={() => setShowAllFixes(true)} />
+      <AllFixesPopup isOpen={showAllFixes} onClose={() => setShowAllFixes(false)} fixes={appliedFixes} setFixes={(_fixes) => setAppliedFixes(_fixes)} onRemoveFix={handleRemoveFix} />
+    </>
   );
 } 

@@ -92,6 +92,8 @@ interface ScanIssuesProps {
   code: string;
   api_key: string;
   onCodeUpdate?: (newCode: string, highlightedLines: number[]) => void;
+  onFixApplied?: (fix: FixIssueResponse & { _issueKey?: string }) => void;
+  fixedIssueKeys?: Set<string>;
 }
 
 interface FixIssueResponse {
@@ -100,50 +102,57 @@ interface FixIssueResponse {
   explanation: string;
   confidence: number;
   changelog: string;
+  _issueKey?: string;
 }
 
-export default function ScanIssues({ reviewData, code, api_key, onCodeUpdate }: ScanIssuesProps) {
+export default function ScanIssues({ reviewData, code, api_key, onCodeUpdate, onFixApplied, fixedIssueKeys }: ScanIssuesProps) {
   const [fixResponse, setFixResponse] = useState<FixIssueResponse | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localCode, setLocalCode] = useState(code);
+  const [fixingKey, setFixingKey] = useState<string | null>(null);
 
   const handleApplyFix = (diff: string) => {
-    console.log("Attempting to apply diff:", diff);
+    if (fixResponse && typeof onFixApplied === 'function') {
+      onFixApplied(fixResponse);
+    }
+    setIsPopupOpen(false);
+    setFixResponse(null);
+  };
+
+  const handleFixButtonClick = async (issueKey: string, issue: Issue) => {
+    setFixingKey(issueKey);
+    setError(null);
     try {
-      const newCode = applyPatch(localCode, diff);
-      if (newCode === false) {
-        setError('Failed to apply patch. The diff may be invalid for the current code.');
-        setIsPopupOpen(false); // Close the popup
-        return;
-      }
-
-      const highlightedLines: number[] = [];
-      const parsedDiff = parsePatch(diff);
-      
-      parsedDiff.forEach(patch => {
-        patch.hunks.forEach(hunk => {
-          let newLineNumber = hunk.newStart;
-          hunk.lines.forEach(line => {
-            if (line.startsWith('+')) {
-              highlightedLines.push(newLineNumber);
-            }
-            if (!line.startsWith('-')) {
-              newLineNumber++;
-            }
-          });
-        });
+      const response = await fetch(`${API_URL}/api/issues/fix`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': api_key,
+        },
+        body: JSON.stringify({
+          code: localCode,
+          suggestion: issue.suggestion,
+          problem: issue.description
+        })
       });
-
-      setLocalCode(newCode);
-      if (onCodeUpdate) onCodeUpdate(newCode, highlightedLines);
-      setIsPopupOpen(false);
-      setFixResponse(null);
-    } catch (e) {
-      console.error("Patching error:", e);
-      setError('An unexpected error occurred while applying the patch.');
-      setIsPopupOpen(false);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fix issue: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      const responseData: FixIssueResponse = await response.json();
+      if (responseData.success) {
+        setFixResponse({ ...responseData, _issueKey: issueKey });
+        setIsPopupOpen(true);
+      } else {
+        throw new Error(responseData.explanation || 'API failed to generate a fix. The backend reported an unsuccessful operation.');
+      }
+    } catch (err) {
+      console.error("API request failed:", err);
+      setError((err as Error).message || 'Failed to send fix request. Please try again.');
+    } finally {
+      setFixingKey(null);
     }
   };
 
@@ -181,69 +190,43 @@ export default function ScanIssues({ reviewData, code, api_key, onCodeUpdate }: 
             </div>
             {Array.isArray(data.issues) && data.issues.length > 0 && (
               <div className="space-y-3">
-                {data.issues.map((issue: Issue, index: number) => (
-                  <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600 relative">
-                    {/* Fix Issue Button */}
-                    <button
-                      className="absolute -top-3 -left-3 flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-2 py-1 rounded shadow z-10 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
-                      title="Fix Issue"
-                      disabled={isLoading}
-                      onClick={async () => {
-                        setIsLoading(true);
-                        setError(null);
-                        try {
-                          const response = await fetch(`${API_URL}/api/issues/fix`, {
-                            method: 'POST',
-                            headers: { 
-                              'Content-Type': 'application/json',
-                              'X-API-Key': api_key,
-                            },
-                            body: JSON.stringify({
-                              code: localCode,
-                              suggestion: issue.suggestion,
-                              problem: issue.description
-                            })
-                          });
-                          
-                          if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(`Failed to fix issue: ${response.status} ${response.statusText} - ${errorText}`);
-                          }
-                          
-                          const responseData: FixIssueResponse = await response.json();
-
-                          if (responseData.success) {
-                            setFixResponse(responseData);
-                            setIsPopupOpen(true);
-                          } else {
-                            throw new Error(responseData.explanation || 'API failed to generate a fix. The backend reported an unsuccessful operation.');
-                          }
-                        } catch (err) {
-                          console.error("API request failed:", err);
-                          setError((err as Error).message || 'Failed to send fix request. Please try again.');
-                        } finally {
-                          setIsLoading(false);
+                {data.issues.map((issue: Issue, index: number) => {
+                  const issueKey = `${category}-${index}`;
+                  return (
+                    <div key={index} className="bg-gray-700 rounded-lg p-3 border border-gray-600 relative">
+                      {/* Fix Issue Button */}
+                      <button
+                        className={`absolute -top-3 -left-3 flex items-center gap-1 px-2 py-1 rounded shadow z-10 text-xs font-semibold
+                          ${(fixedIssueKeys && fixedIssueKeys.has(issueKey))
+                            ? 'bg-green-500 text-white cursor-not-allowed'
+                            : 'bg-yellow-500 hover:bg-yellow-600 text-white'}
+                          disabled:opacity-50 disabled:cursor-not-allowed`
                         }
-                      }}
-                    >
-                      <SparklesIcon className="w-3 h-3 mr-1" /> 
-                      {isLoading ? 'Fixing...' : 'Fix Issue'}
-                    </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      {getSeverityIcon(issue.severity)}
-                      <span className={`text-sm ${getSeverityColor(issue.severity)}`}>
-                        {issue.type}
-                      </span>
+                        style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }}
+                        title={(fixedIssueKeys && fixedIssueKeys.has(issueKey)) ? 'Already fixed' : 'Fix Issue'}
+                        disabled={fixingKey !== null || (fixedIssueKeys && fixedIssueKeys.has(issueKey))}
+                        onClick={() => handleFixButtonClick(issueKey, issue)}
+                      >
+                        <SparklesIcon className="w-3 h-3 mr-1" />
+                        {(fixedIssueKeys && fixedIssueKeys.has(issueKey))
+                          ? 'Done'
+                          : fixingKey === issueKey ? 'Fixing...' : 'Fix Issue'}
+                      </button>
+                      <div className="flex items-center gap-2 mb-2">
+                        {getSeverityIcon(issue.severity)}
+                        <span className={`text-sm ${getSeverityColor(issue.severity)}`}>
+                          {issue.type}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-2">{issue.description}</p>
+                      {issue.suggestion && (
+                        <p className="text-sm text-gray-400">
+                          Suggestion: {issue.suggestion}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-sm mb-2">{issue.description}</p>
-                    {issue.suggestion && (
-                      <p className="text-sm text-gray-400">
-                        Suggestion: {issue.suggestion}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
