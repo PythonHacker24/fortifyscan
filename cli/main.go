@@ -93,7 +93,7 @@ var reviewFileCmd = &cobra.Command{
 		client := api.NewClient(apiKey)
 
 		// Analyze code
-		resp, err := client.AnalyzeCode(string(content))
+		resp, err := client.AnalyzeCode(string(content), filename)
 		if err != nil {
 			return fmt.Errorf("failed to analyze code: %w", err)
 		}
@@ -317,7 +317,7 @@ var reviewAllCmd = &cobra.Command{
 			}
 
 			// Analyze code
-			resp, err := client.AnalyzeCode(string(content))
+			resp, err := client.AnalyzeCode(string(content), relPath)
 			if err != nil {
 				fmt.Printf("⚠️  Failed to analyze %s: %v\n", relPath, err)
 				return nil

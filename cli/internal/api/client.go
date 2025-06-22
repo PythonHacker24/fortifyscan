@@ -54,12 +54,14 @@ func NewClient(apiKey string) *Client {
 	}
 }
 
-func (c *Client) AnalyzeCode(code string) (*AnalysisResponse, error) {
+// AnalyzeCode sends code and file path to the backend for analysis
+func (c *Client) AnalyzeCode(code string, filePath string) (*AnalysisResponse, error) {
 	url := fmt.Sprintf("%s/api/analyze-code", baseURL)
 
-	// Create request body
+	// Create request body with file path
 	reqBody := map[string]string{
 		"code": code,
+		"file": filePath,
 	}
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {

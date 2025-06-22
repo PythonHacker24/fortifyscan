@@ -233,6 +233,7 @@ export default function Dashboard() {
                   <thead>
                     <tr className="text-left border-b border-gray-800">
                       <th className="pb-4 text-gray-400 font-medium">Scan ID</th>
+                      <th className="pb-4 text-gray-400 font-medium">File Path</th>
                       <th className="pb-4 text-gray-400 font-medium">Date</th>
                       <th className="pb-4 text-gray-400 font-medium">Issues Found</th>
                       <th className="pb-4 text-gray-400 font-medium">Actions</th>
@@ -252,6 +253,7 @@ export default function Dashboard() {
                       return (
                         <tr key={scan.id} className="border-b border-gray-800">
                           <td className="py-4 text-gray-300">{scan.id}</td>
+                          <td className="py-4 text-gray-300">{scan.file || ''}</td>
                           <td className="py-4 text-gray-300">
                             {scan.timestamp
                               ? new Date(scan.timestamp.seconds * 1000).toLocaleString()

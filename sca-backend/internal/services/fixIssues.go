@@ -15,10 +15,11 @@ import (
 const fixIssuesURL = "https://z4b7rluk7f3moqgmpducstst.agents.do-ai.run/api/v1/chat/completions"
 
 // FixIssues sends code, suggestion, and problem to the agent and returns the fix response
-func FixIssues(code, suggestion, problem string) (*models.FixIssuesResponse, error) {
+func FixIssues(code, suggestion, problem, filepath string) (*models.FixIssuesResponse, error) {
 	// Prepare request body
 	requestBody := map[string]string{
 		"code":       code,
+		"file":       filepath,
 		"suggestion": suggestion,
 		"problem":    problem,
 	}

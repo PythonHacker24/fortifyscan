@@ -4,7 +4,8 @@ use std::mem;
 fn f1(x: usize) -> usize {
     let a = [0u8; 16];
     let b = x * 512;
-    if b >= 16 {
+    let size = mem::size_of::<u8>();
+    if b >= 16 * size {
         panic!("Buffer overflow: b exceeds array bounds");
     }
     let c = unsafe { *a.as_ptr().add(b) };

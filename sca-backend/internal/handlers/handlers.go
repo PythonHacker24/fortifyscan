@@ -181,6 +181,7 @@ func (h *Handler) AnalyzeHandler(w http.ResponseWriter, r *http.Request) {
 
 		scanData := map[string]interface{}{
 			"code":           req.Code,
+			"file":           req.Filepath,
 			"analysisResult": analysis,
 			"timestamp":      time.Now(),
 		}
@@ -223,6 +224,7 @@ func (h *Handler) FixIssuesHandler(w http.ResponseWriter, r *http.Request) {
 
 	type FixIssuesRequest struct {
 		Code       string `json:"code"`
+		Filepath   string `json:"file"`
 		Suggestion string `json:"suggestion"`
 		Problem    string `json:"problem"`
 	}
@@ -238,7 +240,7 @@ func (h *Handler) FixIssuesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fixResp, err := services.FixIssues(req.Code, req.Suggestion, req.Problem)
+	fixResp, err := services.FixIssues(req.Code, req.Suggestion, req.Problem, req.Filepath)
 	if err != nil {
 		SendError(w, fmt.Sprintf("FixIssues failed: %v", err), http.StatusInternalServerError)
 		return

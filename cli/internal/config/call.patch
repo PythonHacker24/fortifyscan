@@ -1,0 +1,65 @@
+diff --git a/config.go b/config.go
+index someindex..anotherindex 100644
+--- a/config.go
++++ b/config.go
+@@ -1,5 +1,9 @@
+ package config
+
++// Package config provides functionality for managing and storing encrypted API keys.
++// It uses AES-256 encryption in GCM mode to securely store sensitive information.
+ import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+@@ -15,7 +19,11 @@ const (
+	keySize        = 32 // 256 bits for AES-256
+ )
+
+-type Config struct {
++// Config holds the API key configuration
++type Config struct {
+	APIKey string `json:"api_key"`
+ }
+
+-// generateKey generates a random encryption key
++// generateKey generates a cryptographically secure random encryption key of the specified size.
++// It returns the generated key or an error if the operation fails.
+ func generateKey() ([]byte, error) {
+	key := make([]byte, keySize)
+	if _, err := rand.Read(key); err != nil {
+@@ -25,7 +33,11 @@ func generateKey() ([]byte, error) {
+	}
+	return key, nil
+ }
+
+-// getOrCreateKey retrieves the encryption key or creates a new one
++// getOrCreateKey retrieves the encryption key from the filesystem or generates a new one if it doesn't exist.
++// It returns the encryption key and an error if the operation fails.
+ func getOrCreateKey() ([]byte, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+@@ -44,7 +56,11 @@ func getOrCreateKey() ([]byte, error) {
+	}
+
+	return key, nil
+ }
+
+-// SaveAPIKey encrypts and saves the API key
++// SaveAPIKey encrypts the provided API key using AES-256-GCM and saves it to the filesystem.
++// It returns an error if the encryption or file operations fail.
+ func SaveAPIKey(apiKey string) error {
+	key, err := getOrCreateKey()
+	if err != nil {
+@@ -73,7 +89,11 @@ func SaveAPIKey(apiKey string) error {
+	}
+
+	return nil
+ }
+
+-// GetAPIKey retrieves and decrypts the API key
++// GetAPIKey retrieves and decrypts the stored API key using AES-256-GCM.
++// It returns the decrypted API key string or an error if the operation fails.
++// If no key is found, it suggests the user to run the login command.
+ func GetAPIKey() (string, error) {
+	key, err := getOrCreateKey()
+	if err != nil {

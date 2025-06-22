@@ -8,7 +8,8 @@ type Stats struct {
 
 // CodeRequest represents the request body from client
 type CodeRequest struct {
-	Code string `json:"code"`
+	Code     string `json:"code"`
+	Filepath string `json:"file"`
 }
 
 // Issue represents a single code issue
