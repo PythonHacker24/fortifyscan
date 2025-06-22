@@ -69,6 +69,8 @@ export default function InstallationPage() {
                 className="w-full h-full object-cover"
                 controls
                 poster="/video-thumbnail.jpg" // You can add a thumbnail image
+                autoPlay
+                muted
               >
                 <source src="/installation-demo.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
