@@ -23,19 +23,19 @@ const timelineItems: TimelineItem[] = [
   {
     title: "Complete Web Dashboard",
     description: "Building a complete web dashboard for code reviews and interactive fixing",
-    status: "in-progress",
+    status: "completed",
     date: "To be announced ..."
   },
   {
     title: "CLI tool upgraded to fix issues",
     description: "CLI tool will fix the issues and improve code quality on demand",
-    status: "upcoming",
+    status: "completed",
     date: "To be announced ..."
   },
   {
     title: "Complete Raincheck Launch",
     description: "Launching the complete product with CLI integrated with web dashboard",
-    status: "upcoming",
+    status: "in-progress",
     date: "To be announced ..."
   }
 ];

@@ -22,7 +22,8 @@ import {
   StarIcon,
   HeartHandshakeIcon,
   RocketIcon,
-  CoffeeIcon
+  CoffeeIcon,
+  FileText
 } from 'lucide-react';
 import Timeline from './Timeline';
 import Stars from './Stars';
@@ -137,7 +138,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
             Improve Code Quality With 
             <br />
             <span className="text-blue-400">Reviews & Fixes</span>
@@ -153,7 +154,7 @@ export default function HomePage() {
             {/* hover:bg-blue-700 */}
             <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-2">
               <RocketIcon className="w-5 h-5" />
-              <Link href="/installation">Try MVP CLI Stage I for FREE</Link>
+              <Link href="/installation">Try Unlimited MVP for FREE</Link>
             </button>
             <button className="border border-gray-700 hover:border-yellow-500 text-gray-300 hover:text-yellow-400 px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center justify-center gap-2">
               <StarIcon className="w-5 h-5" />
@@ -179,7 +180,7 @@ export default function HomePage() {
               <span className="text-gray-400 text-sm ml-4">terminal</span>
             </div>
             <div className="p-6 font-mono text-sm">
-              <div className="text-green-400">$ raincheck review --branch feature/user-auth</div>
+              <div className="text-green-400">$ raincheck review all</div>
               <div className="text-gray-400 mt-2">🔍 Analyzing code changes...</div>
               <div className="text-gray-400">🛡️  Security check passed</div>
               <div className="text-gray-400">⚡ Performance optimizations found</div>
@@ -196,7 +197,7 @@ export default function HomePage() {
 
       <section className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
             Code Quality Improved at the Cost 
             <br />
             <span className="text-blue-400">Of Your Coffee </span>
@@ -207,6 +208,46 @@ export default function HomePage() {
           </p>
         </div>
       </ section>
+
+        {/* Workflow Animation Section */}
+        <div className="max-w-3xl mx-auto mb-20">
+          <div className="flex items-center justify-center gap-0 md:gap-8 relative">
+            {/* Step 1 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl">
+                <Terminal className="w-8 h-8" />
+              </div>
+              <span className="mt-2 text-blue-400 font-semibold text-lg">Write Code</span>
+            </div>
+            {/* Arrow */}
+            <ArrowRight className="w-10 h-10 text-blue-400 mx-2" />
+            {/* Step 2 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center text-white text-3xl">
+                <CheckCircle className="w-8 h-8" />
+              </div>
+              <span className="mt-2 text-green-400 font-semibold text-lg">Get Reviewed</span>
+            </div>
+            {/* Arrow */}
+            <ArrowRight className="w-10 h-10 text-green-400 mx-2" />
+            {/* Step 3 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white text-3xl">
+                <FileText className="w-8 h-8" />
+              </div>
+              <span className="mt-2 text-yellow-400 font-semibold text-lg">Fix Issues</span>
+            </div>
+            {/* Arrow */}
+            <ArrowRight className="w-10 h-10 text-yellow-400 mx-2" />
+            {/* Step 4 */}
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center text-white text-3xl">
+                <Download className="w-8 h-8" />
+              </div>
+              <span className="mt-2 text-purple-400 font-semibold text-lg">Ship</span>
+            </div>
+          </div>
+        </div>
 
       {/* Features Section */}
       <section id="features" className="container mx-auto px-6 py-20">
@@ -321,7 +362,7 @@ export default function HomePage() {
             </button>
             <button className="border border-gray-700 hover:border-blue-500 text-gray-300 hover:text-blue-400 px-8 py-4 rounded-lg text-lg font-semibold transition-all flex items-center justify-center gap-2">
               <ExternalLink className="w-5 h-5" />
-              <Link href='/docs'>View Documentation</Link>
+              <Link href='/installation'>View Installation</Link>
             </button>
           </div>
           
